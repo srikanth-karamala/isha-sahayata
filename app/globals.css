@@ -292,14 +292,14 @@ body {
 
 .yc-map-controls {
   position: absolute;
-  /* Clear Dynamic Island + header bar + breathing room */
-  top: calc(2.75rem + 4.5rem + 0.85rem);
-  right: 0.75rem;
+  /* Further below island + near-you header so controls stay fully visible */
+  top: calc(2.75rem + 7.5rem + 2rem);
+  right: 0.85rem;
   z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: 0.7rem;
 }
 
 .yc-map-ctrl {
