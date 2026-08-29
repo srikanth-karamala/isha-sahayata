@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @unique
+  createdAt DateTime @default(now())
+  heldCycles Cycle[]
+}
+
+model Cycle {
+  id             String     @id @default(uuid())
+  qrCode         String     @unique
+  status         String     @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE
+  currentHubId   String
+  currentHub     Hub        @relation(fields: [currentHubId], references: [id])
+  latitude       Float? // GPS Latitude when reported
+  longitude      Float? // GPS Longitude when reported
+  issueNotes     String?
+  issuePhotoUrl  String? // rider/staff photo of the fault
+  repairPhotoUrl String? // mechanic proof after repair (cleared on next fault)
+  heldByUserId   String? // set while IN_USE, so returns/faults can be tied to the rider who checked it out
+  heldByUser     User?      @relation(fields: [heldByUserId], references: [id])
+  updatedAt      DateTime   @updatedAt
+  logs           AuditLog[]
+  rides          Ride[]
+}
+
+model Ride {
+  id             String    @id @default(uuid())
+  cycleId        String
+  cycle          Cycle     @relation(fields: [cycleId], references: [id])
+  userId         String
+  qrCode         String
+  status         String    @default("ACTIVE") // ACTIVE, COMPLETED
+  pathJson       String    @default("[]")
+  distanceMeters Float     @default(0)
+  lastLat        Float?
+  lastLng        Float?
+  startHubId     String
+  endHubId       String?
+  startedAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  endedAt        DateTime?
+}
+
+model Hub {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  capacity  Int        @default(20)
+  latitude  Float?   
+  longitude Float? 
+  cycles    Cycle[]
+  startLogs AuditLog[] @relation("StartHub")
+  endLogs   AuditLog[] @relation("EndHub")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  cycleId        String
+  cycle          Cycle    @relation(fields: [cycleId], references: [id])
+  userId         String   // rider's User.id when known, or a sentinel like "admin-staff" for staff actions
+  startHubId     String
+  startHub       Hub      @relation("StartHub", fields: [startHubId], references: [id])
+  endHubId       String?
+  endHub         Hub?     @relation("EndHub", fields: [endHubId], references: [id])
+  latitude       Float?
+  longitude      Float?
+  distanceMeters Float?   // actual GPS-tracked ride distance, recorded on DROP_OFF when available
+  action         String   // CHECKOUT, DROP_OFF, REPORT_FAULT, REPAIRED
+  createdAt      DateTime @default(now())
+}

@@ -1,0 +1,446 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { QrCode, User } from 'lucide-react';
+import PhoneShell from './PhoneShell';
+import QRScanner from './QRScanner';
+import ActionModal from './ActionModal';
+import IdentityGate from './IdentityGate';
+import useRideTracker from '@/hooks/useRideTracker';
+import { loadRiderIdentity, type RiderIdentity } from '@/lib/rider-identity';
+import { clearStoredRide, loadStoredRide, saveStoredRide } from '@/lib/active-ride';
+import { dropOffCycle, getActiveCycleForUser, getHubs, pingRideTrack } from '@/app/actions';
+import type { CycleDetail, HubSummary } from '@/lib/types';
+import { availableCount, faultCount } from '@/lib/types';
+import { formatDistance, formatDuration, hubsForPickup, isNearHub, nearestOpenDock } from '@/lib/geo';
+import SlideToConfirm from './SlideToConfirm';
+
+const MapView = dynamic(() => import('./MapView'), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute inset-0 bg-[#e8dfc8] flex items-center justify-center text-stone-500 text-sm font-semibold">
+      Loading campus map…
+    </div>
+  ),
+});
+
+export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary[] }) {
+  const [hubs, setHubs] = useState(initialHubs);
+  const [showScanner, setShowScanner] = useState(false);
+  const [needsIdentity, setNeedsIdentity] = useState(false);
+  const [activeQr, setActiveQr] = useState<string | null>(null);
+  const [rider, setRider] = useState<RiderIdentity | null>(null);
+  const [checkedStorage, setCheckedStorage] = useState(false);
+  const [userPos, setUserPos] = useState<[number, number] | null>(null);
+  const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
+  const [activeRide, setActiveRide] = useState<CycleDetail | null>(null);
+  const tracker = useRideTracker();
+  const trackerRef = useRef(tracker);
+  trackerRef.current = tracker;
+
+  const refreshHubs = async () => {
+    const next = await getHubs();
+    setHubs(next);
+    return next;
+  };
+
+  useEffect(() => {
+    setRider(loadRiderIdentity());
+    setCheckedStorage(true);
+  }, []);
+
+  // Keep dock counts live while the app is open
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void refreshHubs();
+    }, 7000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!checkedStorage || !rider) return;
+    let cancelled = false;
+
+    getActiveCycleForUser(rider.id).then((cycle) => {
+      if (cancelled) return;
+      if (cycle) {
+        setActiveRide(cycle);
+        saveStoredRide({ qrCode: cycle.qrCode, startedAt: loadStoredRide()?.startedAt ?? Date.now() });
+        if (!tracker.isTracking) {
+          tracker.reset();
+          tracker.start();
+        }
+      } else {
+        const stored = loadStoredRide();
+        if (stored) clearStoredRide();
+        setActiveRide(null);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkedStorage, rider?.id]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserPos([position.coords.latitude, position.coords.longitude]);
+      },
+      () => undefined,
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 8000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  useEffect(() => {
+    if (!activeRide || !rider) return;
+    const id = window.setInterval(() => {
+      const live = trackerRef.current;
+      if (!live.isTracking || !live.currentPos) return;
+      void pingRideTrack(
+        activeRide.qrCode,
+        rider.id,
+        live.currentPos[0],
+        live.currentPos[1],
+        live.distanceMeters,
+        live.ridePath
+      );
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [activeRide?.qrCode, rider?.id]);
+
+  const origin = tracker.currentPos ?? userPos;
+  const nearbyPickup = useMemo(() => hubsForPickup(hubs, origin), [hubs, origin]);
+  const nearestWithBike = nearbyPickup.find(({ hub }) => availableCount(hub) > 0) ?? null;
+  const dropTarget = useMemo(() => nearestOpenDock(hubs, origin), [hubs, origin]);
+  const nearDrop = Boolean(
+    activeRide &&
+      dropTarget &&
+      (origin ? isNearHub(dropTarget.hub, origin) : true)
+  );  const selectedHub = hubs.find((hub) => hub.id === selectedHubId) ?? null;
+  const sheetRows = selectedHub
+    ? [
+        {
+          hub: selectedHub,
+          meters: nearbyPickup.find((n) => n.hub.id === selectedHub.id)?.meters ?? Number.POSITIVE_INFINITY,
+        },
+      ]
+    : nearbyPickup.slice(0, 5);
+
+  // Auto-focus the nearest dock that actually has a bike once GPS lands (once).
+  const didAutoSelectRef = useRef(false);
+  useEffect(() => {
+    if (didAutoSelectRef.current || selectedHubId || activeRide || !nearestWithBike) return;
+    if (!Number.isFinite(nearestWithBike.meters)) return;
+    didAutoSelectRef.current = true;
+    setSelectedHubId(nearestWithBike.hub.id);
+  }, [nearestWithBike, selectedHubId, activeRide]);
+
+  const headerReady = nearestWithBike
+    ? availableCount(nearestWithBike.hub)
+    : hubs.reduce((sum, hub) => sum + availableCount(hub), 0);
+  const headerMeta = nearestWithBike
+    ? Number.isFinite(nearestWithBike.meters)
+      ? `${nearestWithBike.hub.name.split(' ')[0]} · ${formatDistance(nearestWithBike.meters)}`
+      : nearestWithBike.hub.name
+    : userPos
+      ? 'no bikes near'
+      : 'campus';
+
+  const confirmNearDrop = async () => {
+    if (!activeRide || !rider || !dropTarget) return;
+    const [lat, lng] = origin ?? [];
+    try {
+      await dropOffCycle(
+        activeRide.qrCode,
+        dropTarget.hub.id,
+        rider.id,
+        lat,
+        lng,
+        tracker.distanceMeters
+      );
+      await endRideLocally();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Could not drop off.');
+    }
+  };
+
+  const openScan = () => {
+    if (rider) setShowScanner(true);
+    else setNeedsIdentity(true);
+  };
+
+  const openReturn = () => {
+    if (!activeRide) return;
+    if (rider) setActiveQr(activeRide.qrCode);
+    else setNeedsIdentity(true);
+  };
+
+  const endRideLocally = async () => {
+    setActiveRide(null);
+    clearStoredRide();
+    tracker.stop();
+    tracker.reset();
+    setActiveQr(null);
+    await refreshHubs();
+  };
+
+  return (
+    <PhoneShell>
+      <div className="yc-app">
+        <div className="yc-app-map">
+          <MapView
+            hubs={hubs}
+            selectedHubId={selectedHubId}
+            followRider={Boolean(activeRide)}
+            currentPos={tracker.currentPos}
+            ridePath={tracker.ridePath}
+            onSelectHub={setSelectedHubId}
+            onUserLocated={setUserPos}
+          />
+        </div>
+
+        <div className="yc-app-ui">
+          <header className="pt-11 px-3 pb-1">
+            <div className="flex items-center gap-3 bg-[rgba(255,253,249,0.96)] backdrop-blur-md rounded-2xl border border-[var(--line)] px-3.5 py-3 shadow-sm">
+              <img
+                src="/isha-logo.jpeg"
+                alt="Isha Foundation"
+                className="h-10 w-10 rounded-xl object-cover shrink-0"
+              />
+              <div className="min-w-0 flex-1 pr-1">
+                <p className="yc-eyebrow">Isha Yoga Center</p>
+                <h1 className="yc-title yc-title-sm truncate mt-1">Yellow Cycle</h1>
+              </div>
+              <div className="text-right shrink-0 pl-2 border-l border-[var(--line)] max-w-[7.5rem]">
+                <p className="yc-title yc-title-sm tabular-nums leading-none">{headerReady}</p>
+                <p className="yc-meta mt-1 truncate" title={headerMeta}>
+                  {userPos || tracker.currentPos ? 'near you' : 'ready'}
+                </p>
+                {(userPos || tracker.currentPos) && (
+                  <p className="yc-meta mt-0.5 truncate opacity-80">{headerMeta}</p>
+                )}
+              </div>
+            </div>
+            {!userPos && !tracker.currentPos && !activeRide && (
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.geolocation?.getCurrentPosition(
+                    (position) => {
+                      setUserPos([position.coords.latitude, position.coords.longitude]);
+                    },
+                    () => undefined,
+                    { enableHighAccuracy: true, timeout: 12000 }
+                  );
+                }}
+                className="mt-2 w-full text-left px-3.5 py-2.5 rounded-xl border border-[var(--line)] bg-[rgba(255,253,249,0.92)] text-[12px] text-[var(--ink-2)]"
+              >
+                Share location to sort docks by distance — tap here or use Locate.
+              </button>
+            )}
+          </header>
+
+          <div className="yc-app-spacer" />
+
+          <div className="yc-bottom-stack">
+            {activeRide ? (
+              <div className="yc-sheet p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="yc-eyebrow">Step 2 · Riding</p>
+                    <p className="yc-mono yc-title yc-title-md truncate mt-1.5">{activeRide.qrCode}</p>
+                    {rider && (
+                      <p className="yc-body-sm mt-1.5 truncate">
+                        {rider.name} · {rider.phone}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0 pl-2">
+                    <p className="yc-title yc-title-md tabular-nums">
+                      {(tracker.distanceMeters / 1000).toFixed(2)} km
+                    </p>
+                    <p className="yc-meta mt-1">{formatDuration(tracker.elapsedSeconds)}</p>
+                  </div>
+                </div>
+                <p className="yc-body mt-3.5 mb-3">
+                  {nearDrop && dropTarget
+                    ? `You are at ${dropTarget.hub.name}. Slide to leave the cycle here.`
+                    : dropTarget
+                      ? `Nearest open dock: ${dropTarget.hub.name}${
+                          Number.isFinite(dropTarget.meters) ? ` · ${formatDistance(dropTarget.meters)}` : ''
+                        }. Ride closer to slide-drop.`
+                      : 'Ride to a dock, then return the cycle so the map count updates.'}
+                </p>
+                <SlideToConfirm
+                  armed={nearDrop}
+                  armedLabel={
+                    dropTarget
+                      ? origin
+                        ? `Slide to drop off · ${dropTarget.hub.name}`
+                        : `No GPS · slide if at ${dropTarget.hub.name}`
+                      : 'Slide to drop off'
+                  }
+                  disabledLabel={
+                    dropTarget
+                      ? `Get within ~75 m of ${dropTarget.hub.name}`
+                      : 'No open dock nearby'
+                  }
+                  onConfirm={() => {
+                    void confirmNearDrop();
+                  }}
+                />
+                <button type="button" onClick={openReturn} className="yc-btn-ghost mt-2">
+                  Choose another dock
+                </button>
+                <button type="button" onClick={openScan} className="yc-btn-ghost mt-1">
+                  Scan a different code
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="yc-sheet">
+                  <div className="px-4 pt-4 pb-2.5 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="yc-eyebrow">Step 1 · Find a dock</p>
+                      <p className="yc-title yc-title-sm mt-1.5 truncate">
+                        {selectedHub ? selectedHub.name : 'Nearby docks'}
+                      </p>
+                      {selectedHub && (
+                        <p className="yc-body-sm mt-1.5">
+                          <span className="yc-strong text-[var(--ink)]">{availableCount(selectedHub)}</span>
+                          {' '}
+                          yellow cycle{availableCount(selectedHub) === 1 ? '' : 's'} ready now
+                        </p>
+                      )}
+                    </div>
+                    {selectedHub && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedHubId(null)}
+                        className="yc-strong text-[var(--muted)] shrink-0 min-h-11 min-w-11 px-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[13px]"
+                      >
+                        All
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-40 overflow-y-auto overscroll-contain divide-y divide-[var(--line)]">
+                    {sheetRows.map(({ hub, meters }) => {
+                      const available = availableCount(hub);
+                      const faults = faultCount(hub);
+                      const selected = hub.id === selectedHubId;
+                      return (
+                        <button
+                          key={hub.id}
+                          type="button"
+                          onClick={() => setSelectedHubId(hub.id)}
+                          className={`w-full flex items-center gap-3 px-4 py-3.5 text-left min-h-[3.5rem] ${
+                            selected ? 'bg-primary/15' : ''
+                          }`}
+                        >
+                          <div
+                            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-[15px] yc-strong ${
+                              faults > 0
+                                ? 'bg-rose-100 text-rose-800'
+                                : available === 0
+                                  ? 'bg-[var(--surface-2)] text-[var(--faint)]'
+                                  : 'bg-primary text-[var(--ink)]'
+                            }`}
+                          >
+                            {available}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="yc-title yc-title-sm truncate">{hub.name}</p>
+                            <p className="yc-body-sm mt-1">
+                              {available === 0 ? 'No bikes right now' : `${available} available`}
+                              {Number.isFinite(meters) ? ` · ${formatDistance(meters)}` : ''}
+                              {faults > 0 ? ` · ${faults} with staff` : ''}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-2 px-3">
+                  <button type="button" onClick={openScan} className="yc-btn-fab">
+                    <QrCode className="w-5 h-5" />
+                    Scan to unlock
+                  </button>
+                  {checkedStorage && !rider && (
+                    <p className="yc-meta text-center px-4 max-w-[18rem]">
+                      First scan asks for your name and phone, then unlocks the cycle.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {needsIdentity && (
+          <IdentityGate
+            onClose={() => setNeedsIdentity(false)}
+            onIdentified={(identity) => {
+              setRider(identity);
+              setNeedsIdentity(false);
+              setShowScanner(true);
+            }}
+          />
+        )}
+
+        {showScanner && (
+          <QRScanner
+            onScanSuccess={(code) => {
+              setShowScanner(false);
+              setActiveQr(code);
+            }}
+            onClose={() => setShowScanner(false)}
+          />
+        )}
+
+        {activeQr && rider && (
+          <ActionModal
+            qrCode={activeQr}
+            hubs={hubs}
+            userId={rider.id}
+            tracker={tracker}
+            userPos={userPos}
+            activeRideQr={activeRide?.qrCode ?? null}
+            onClose={() => setActiveQr(null)}
+            onUnlocked={async (code) => {
+              saveStoredRide({ qrCode: code, startedAt: Date.now() });
+              tracker.reset();
+              tracker.start();
+              setActiveRide({
+                id: code,
+                qrCode: code,
+                status: 'IN_USE',
+                currentHubId: '',
+                heldByUserId: rider.id,
+                issueNotes: null,
+                currentHub: null,
+                heldByUser: { name: rider.name, phone: rider.phone },
+              });
+              setActiveQr(null);
+              setSelectedHubId(null);
+              await refreshHubs();
+            }}
+            onReturned={async () => {
+              await endRideLocally();
+            }}
+            onFaulted={async () => {
+              await endRideLocally();
+            }}
+          />
+        )}
+      </div>
+    </PhoneShell>
+  );
+}

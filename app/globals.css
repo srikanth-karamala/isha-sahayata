@@ -1,0 +1,724 @@
+@import "tailwindcss";
+
+/* =============================================================
+   Yellow Cycle — Isha design language
+   Fonts + hierarchy aligned with IE volunteering / sadhguru.org:
+   Fedra Sans (book/medium) · Fedra Serif · Mukta / Trirong fallbacks
+   Product accent stays yellow-cycle gold.
+   ============================================================= */
+
+:root {
+  --ink: #2e2a26;
+  --ink-2: #4a443e;
+  --muted: #6d6358;
+  --faint: #938877;
+
+  --paper: #f1ebdf;
+  --surface: #fffdf9;
+  --surface-2: #f6f1e7;
+  --line: #e3daca;
+
+  --primary: #f5b700;
+  --primary-dark: #ca8a04;
+  --primary-light: #fde68a;
+  --accent: #f5b700;
+  --accent-dark: #ca8a04;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+
+  --serif: "FedraSerifAStdBook", "Trirong", Georgia, serif;
+  --sans: "FedraSansStd-book", "Mukta", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sans-med: "FedraSansStd-medium", "Mukta", sans-serif;
+
+  --phone-w: 390px;
+  --phone-h: 844px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-accent-dark: var(--accent-dark);
+  --font-sans: var(--sans);
+  --font-serif: var(--serif);
+}
+
+html,
+body {
+  background: #1a1714;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.55;
+  min-height: 100%;
+  margin: 0;
+  overscroll-behavior: none;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Keep in @layer base so Tailwind color utilities (e.g. text-white) can override. */
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+/* —— Typography scale (Isha hierarchy) —— */
+.yc-eyebrow {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.19em;
+  color: var(--faint);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.yc-title {
+  font-family: var(--sans-med);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 0;
+}
+
+.yc-title-lg {
+  font-size: 22px;
+}
+
+.yc-title-md {
+  font-size: 17px;
+}
+
+.yc-title-sm {
+  font-size: 15px;
+}
+
+.yc-display {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 0;
+}
+
+.yc-body {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin: 0;
+}
+
+.yc-body-sm {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 0;
+}
+
+.yc-meta {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--faint);
+  margin: 0;
+}
+
+.yc-strong {
+  font-family: var(--sans-med);
+  font-weight: 600;
+}
+
+.yc-mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* —— iPhone prototype stage —— */
+.yc-phone-stage {
+  min-height: 100dvh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, #3a3228 0%, transparent 55%),
+    linear-gradient(165deg, #2a241c 0%, #14110e 55%, #0c0a08 100%);
+}
+
+.yc-phone {
+  position: relative;
+  width: min(100%, var(--phone-w));
+  height: min(100dvh - 2.5rem, var(--phone-h));
+  max-height: 100dvh;
+  border-radius: 3rem;
+  background: #0a0a0a;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 0 11px #1c1917,
+    0 0 0 12px #44403c,
+    0 28px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.yc-phone-bezel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 2.75rem;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.7rem;
+}
+
+.yc-phone-island {
+  width: 7.25rem;
+  height: 1.65rem;
+  border-radius: 9999px;
+  background: #0a0a0a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.yc-phone-speaker {
+  display: none;
+}
+
+.yc-phone-screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--paper);
+  isolation: isolate;
+}
+
+.yc-phone-home {
+  position: absolute;
+  bottom: 0.45rem;
+  left: 50%;
+  z-index: 60;
+  width: 8rem;
+  height: 0.28rem;
+  border-radius: 9999px;
+  background: rgba(46, 42, 38, 0.35);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+@media (max-width: 430px) {
+  .yc-phone-stage {
+    padding: 0;
+    background: #0a0a0a;
+  }
+
+  .yc-phone {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .yc-phone-bezel {
+    height: env(safe-area-inset-top, 0px);
+    min-height: 0;
+    padding-top: 0;
+  }
+
+  .yc-phone-island {
+    display: none;
+  }
+
+  .yc-phone-home {
+    bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    opacity: 0.45;
+  }
+}
+
+/* —— App chrome inside phone —— */
+.yc-app {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+.yc-app-map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.yc-app-ui {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  pointer-events: none;
+}
+
+.yc-app-ui > * {
+  pointer-events: auto;
+}
+
+.yc-app-spacer {
+  flex: 1 1 auto;
+  min-height: 0;
+  pointer-events: none !important;
+}
+
+.yc-map-controls {
+  position: absolute;
+  /* Clear Dynamic Island + header bar + breathing room */
+  top: calc(2.75rem + 4.5rem + 0.85rem);
+  right: 0.75rem;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.yc-map-ctrl {
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgba(255, 253, 249, 0.96);
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgba(46, 42, 38, 0.1);
+  position: relative;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.yc-map-ctrl > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  display: block;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+.yc-map-ctrl-3d {
+  width: auto;
+  min-width: 2.75rem;
+  padding: 0 0.65rem;
+  gap: 0.28rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans-med);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  overflow: visible;
+}
+
+.yc-map-ctrl-3d > svg {
+  position: static;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+}
+
+.yc-map-ctrl-3d.is-active {
+  background: var(--ink);
+  color: #fffdf9;
+  border-color: var(--ink);
+}
+
+.yc-map-ctrl:active {
+  transform: scale(0.96);
+}
+
+.yc-map-zoom {
+  box-sizing: border-box;
+  width: 2.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 253, 249, 0.96);
+  box-shadow: 0 4px 14px rgba(46, 42, 38, 0.1);
+}
+
+.yc-map-zoom .yc-map-ctrl-zoom {
+  box-sizing: border-box;
+  width: 100%;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+}
+
+.yc-map-zoom .yc-map-ctrl-zoom + .yc-map-ctrl-zoom {
+  border-top: 1px solid var(--line);
+}
+
+/* Geometric + / − so stroke icons cannot sit off-center */
+.yc-zoom-glyph {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: block;
+  pointer-events: none;
+}
+
+.yc-zoom-glyph::before,
+.yc-zoom-glyph::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.yc-zoom-glyph-plus::before,
+.yc-zoom-glyph-minus::before {
+  width: 14px;
+  height: 2px;
+}
+
+.yc-zoom-glyph-plus::after {
+  width: 2px;
+  height: 14px;
+}
+
+.yc-sheet {
+  margin: 0 0.75rem;
+  background: rgba(255, 253, 249, 0.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.yc-bottom-stack {
+  padding: 0 0 max(1.75rem, calc(env(safe-area-inset-bottom, 0px) + 1.1rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.yc-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(46, 42, 38, 0.42);
+  padding: 0;
+}
+
+.yc-overlay-card {
+  width: 100%;
+  max-height: min(88%, 640px);
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 1.5rem 1.5rem 0 0;
+  border: 1px solid var(--line);
+  border-bottom: none;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+}
+
+.yc-map {
+  height: 100%;
+  width: 100%;
+  /* Match satellite canopy so gaps never flash phone wheat / black chrome */
+  background: #3a5238;
+  font-family: inherit;
+}
+
+.yc-map .maplibregl-map,
+.yc-map .maplibregl-canvas-container,
+.yc-map .maplibregl-canvas {
+  height: 100%;
+  width: 100%;
+  background: #3a5238;
+  font-family: inherit;
+}
+
+.yc-map-pin-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 9px;
+  font-family: var(--sans);
+  background: rgba(255, 253, 249, 0.78);
+}
+
+.maplibregl-popup-content {
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: none;
+  border: 1px solid var(--line);
+  font-family: var(--sans);
+}
+
+.yc-popup-title {
+  font-family: var(--sans-med);
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0 0 2px;
+  color: var(--ink);
+}
+
+.yc-popup-meta {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Tip is the layout bottom so MapLibre anchor:'bottom' sits on the lat/lng. */
+.yc-pin {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 2px 4px rgba(46, 42, 38, 0.18));
+}
+
+.yc-pin-bubble {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--ink);
+  font-family: var(--sans-med);
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  line-height: 1;
+}
+
+.yc-pin.is-fault .yc-pin-bubble {
+  background: #fff;
+  color: #a81d28;
+  border-color: #cf4520;
+}
+
+.yc-pin.is-empty .yc-pin-bubble {
+  background: var(--surface-2);
+  color: var(--faint);
+}
+
+.yc-pin.is-selected .yc-pin-bubble {
+  transform: scale(1.08);
+  border-color: var(--ink);
+}
+
+.yc-pin-tip {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid #fff;
+  margin-top: -2px;
+}
+
+.yc-pin.is-fault .yc-pin-tip {
+  border-top-color: #cf4520;
+}
+
+.yc-pin.is-empty .yc-pin-tip {
+  border-top-color: var(--surface-2);
+}
+
+/* Absolutely positioned so it does not push the tip off the coordinate. */
+.yc-pin-label {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 76px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(255, 253, 249, 0.94);
+  color: var(--ink);
+  font-family: var(--sans-med);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--line);
+  pointer-events: none;
+}
+
+.yc-rider-dot {
+  width: 18px;
+  height: 18px;
+  background: var(--primary);
+  border: 3px solid #fff;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 6px rgba(245, 183, 0, 0.22);
+}
+
+.yc-btn-primary {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.85rem 1rem;
+  background: var(--primary);
+  color: var(--ink);
+  font-family: var(--sans-med);
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: 1rem;
+  border: 1px solid rgba(202, 138, 4, 0.25);
+}
+
+.yc-btn-primary:active {
+  transform: scale(0.99);
+}
+
+.yc-btn-ghost {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans-med);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.yc-btn-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--primary);
+  color: var(--ink);
+  font-family: var(--sans-med);
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border-radius: 9999px;
+  border: 1px solid rgba(202, 138, 4, 0.2);
+  box-shadow: 0 8px 24px rgba(46, 42, 38, 0.12);
+}
+
+.yc-btn-fab:active {
+  transform: scale(0.98);
+}
+
+.yc-slide {
+  position: relative;
+  height: 3.25rem;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.yc-slide.is-armed {
+  background: rgba(245, 183, 0, 0.28);
+  border-color: rgba(202, 138, 4, 0.45);
+  box-shadow: 0 0 0 1px rgba(245, 183, 0, 0.2);
+}
+
+.yc-slide.is-locked {
+  opacity: 0.72;
+}
+
+.yc-slide-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3.25rem 0 3.5rem;
+  margin: 0;
+  font-family: var(--sans-med);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+  pointer-events: none;
+}
+
+.yc-slide.is-locked .yc-slide-label {
+  color: var(--muted);
+}
+
+.yc-slide-knob {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.3rem;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.08em;
+  box-shadow: 0 4px 12px rgba(46, 42, 38, 0.16);
+  will-change: transform;
+}
+
+.yc-slide.is-locked .yc-slide-knob {
+  background: var(--surface);
+  color: var(--faint);
+  box-shadow: none;
+}
