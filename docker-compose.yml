@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yellow-cycle-postgres
+    restart: unless-stopped
+    ports:
+      # Host 5434 avoids clashing with other local Postgres on 5432
+      - '5434:5432'
+    environment:
+      POSTGRES_USER: yellow
+      POSTGRES_PASSWORD: yellow
+      POSTGRES_DB: yellow_cycle
+    volumes:
+      - yellow_cycle_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U yellow -d yellow_cycle']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  yellow_cycle_pg:

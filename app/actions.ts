@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import type { CycleStatus } from '@prisma/client';
 import type { CycleDetail, HubSummary } from '@/lib/types';
 
 function haversineMeters(
@@ -31,17 +32,25 @@ const hubInclude = {
   },
 } as const;
 
-function parsePath(json: string): [number, number][] {
-  try {
-    const parsed = JSON.parse(json) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (point): point is [number, number] =>
-        Array.isArray(point) && point.length >= 2 && typeof point[0] === 'number' && typeof point[1] === 'number'
-    );
-  } catch {
-    return [];
-  }
+const PATH_POINT_LIMIT = 500;
+
+async function replaceRidePathPoints(rideId: string, path: [number, number][]) {
+  const points = path.slice(-PATH_POINT_LIMIT);
+  await prisma.$transaction([
+    prisma.ridePathPoint.deleteMany({ where: { rideId } }),
+    ...(points.length
+      ? [
+          prisma.ridePathPoint.createMany({
+            data: points.map(([latitude, longitude], seq) => ({
+              rideId,
+              seq,
+              latitude,
+              longitude,
+            })),
+          }),
+        ]
+      : []),
+  ]);
 }
 
 async function completeActiveRide(
@@ -68,15 +77,17 @@ async function completeActiveRide(
       distanceMeters: extra.distanceMeters ?? ride.distanceMeters,
       lastLat: extra.lat ?? ride.lastLat,
       lastLng: extra.lng ?? ride.lastLng,
-      pathJson: extra.path ? JSON.stringify(extra.path.slice(-500)) : ride.pathJson,
     },
   });
+  if (extra.path) {
+    await replaceRidePathPoints(ride.id, extra.path);
+  }
 }
 
 function toCycleDetail(cycle: {
   id: string;
   qrCode: string;
-  status: string;
+  status: CycleStatus;
   currentHubId: string;
   heldByUserId: string | null;
   issueNotes: string | null;
@@ -201,6 +212,9 @@ export async function checkoutCycle(qrCode: string, userId: string) {
   if (alreadyRiding) {
     throw new Error(`You already have ${alreadyRiding.qrCode}. Return it before unlocking another.`);
   }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error('Rider profile not found. Sign in again.');
 
   const updatedCycle = await prisma.cycle.update({
     where: { qrCode: code },
@@ -443,9 +457,9 @@ export async function pingRideTrack(
       lastLat: lat,
       lastLng: lng,
       distanceMeters,
-      pathJson: JSON.stringify(path.slice(-500)),
     },
   });
+  await replaceRidePathPoints(ride.id, path);
   await prisma.cycle.update({
     where: { id: cycle.id },
     data: { latitude: lat, longitude: lng },
@@ -457,30 +471,28 @@ export async function getActiveRides() {
   const rides = await prisma.ride.findMany({
     where: { status: 'ACTIVE' },
     orderBy: { updatedAt: 'desc' },
+    include: {
+      user: { select: { id: true, name: true, phone: true } },
+      pathPoints: {
+        orderBy: { seq: 'asc' },
+        select: { latitude: true, longitude: true },
+      },
+    },
   });
-  const userIds = [...new Set(rides.map((ride) => ride.userId))];
-  const users = userIds.length
-    ? await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, name: true, phone: true },
-      })
-    : [];
-  const byId = new Map(users.map((user) => [user.id, user]));
 
-  return rides.map((ride) => {
-    const rider = byId.get(ride.userId);
-    return {
-      id: ride.id,
-      qrCode: ride.qrCode,
-      userId: ride.userId,
-      riderName: rider?.name ?? 'Rider',
-      riderPhone: rider?.phone ?? '',
-      distanceMeters: ride.distanceMeters,
-      lastLat: ride.lastLat,
-      lastLng: ride.lastLng,
-      path: parsePath(ride.pathJson),
-      updatedAt: ride.updatedAt.toISOString(),
-      startedAt: ride.startedAt.toISOString(),
-    };
-  });
+  return rides.map((ride) => ({
+    id: ride.id,
+    qrCode: ride.qrCode,
+    userId: ride.userId,
+    riderName: ride.user.name,
+    riderPhone: ride.user.phone,
+    distanceMeters: ride.distanceMeters,
+    lastLat: ride.lastLat,
+    lastLng: ride.lastLng,
+    path: ride.pathPoints.map(
+      (point): [number, number] => [point.latitude, point.longitude]
+    ),
+    updatedAt: ride.updatedAt.toISOString(),
+    startedAt: ride.startedAt.toISOString(),
+  }));
 }

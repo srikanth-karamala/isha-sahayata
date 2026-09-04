@@ -3,77 +3,118 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+enum CycleStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+}
+
+enum RideStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum AuditAction {
+  CHECKOUT
+  DROP_OFF
+  REPORT_FAULT
+  REPAIRED
+}
+
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String   @unique
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  name       String
+  phone      String   @unique
+  createdAt  DateTime @default(now())
   heldCycles Cycle[]
+  rides      Ride[]
 }
 
 model Cycle {
-  id             String     @id @default(uuid())
-  qrCode         String     @unique
-  status         String     @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE
+  id             String      @id @default(uuid())
+  qrCode         String      @unique
+  status         CycleStatus @default(AVAILABLE)
   currentHubId   String
-  currentHub     Hub        @relation(fields: [currentHubId], references: [id])
-  latitude       Float? // GPS Latitude when reported
-  longitude      Float? // GPS Longitude when reported
+  currentHub     Hub         @relation(fields: [currentHubId], references: [id])
+  latitude       Float?
+  longitude      Float?
   issueNotes     String?
-  issuePhotoUrl  String? // rider/staff photo of the fault
-  repairPhotoUrl String? // mechanic proof after repair (cleared on next fault)
-  heldByUserId   String? // set while IN_USE, so returns/faults can be tied to the rider who checked it out
-  heldByUser     User?      @relation(fields: [heldByUserId], references: [id])
-  updatedAt      DateTime   @updatedAt
+  issuePhotoUrl  String?
+  repairPhotoUrl String?
+  heldByUserId   String?
+  heldByUser     User?       @relation(fields: [heldByUserId], references: [id])
+  updatedAt      DateTime    @updatedAt
   logs           AuditLog[]
   rides          Ride[]
 }
 
 model Ride {
-  id             String    @id @default(uuid())
+  id             String          @id @default(uuid())
   cycleId        String
-  cycle          Cycle     @relation(fields: [cycleId], references: [id])
+  cycle          Cycle           @relation(fields: [cycleId], references: [id])
   userId         String
+  user           User            @relation(fields: [userId], references: [id])
   qrCode         String
-  status         String    @default("ACTIVE") // ACTIVE, COMPLETED
-  pathJson       String    @default("[]")
-  distanceMeters Float     @default(0)
+  status         RideStatus      @default(ACTIVE)
+  distanceMeters Float           @default(0)
   lastLat        Float?
   lastLng        Float?
   startHubId     String
   endHubId       String?
-  startedAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  startedAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   endedAt        DateTime?
+  pathPoints     RidePathPoint[]
+
+  @@index([status, updatedAt])
+  @@index([userId, status])
+  @@index([cycleId, status])
+}
+
+/// Ordered GPS samples for a ride — replaces the old pathJson blob.
+model RidePathPoint {
+  id         String   @id @default(uuid())
+  rideId     String
+  ride       Ride     @relation(fields: [rideId], references: [id], onDelete: Cascade)
+  seq        Int
+  latitude   Float
+  longitude  Float
+  recordedAt DateTime @default(now())
+
+  @@unique([rideId, seq])
+  @@index([rideId])
 }
 
 model Hub {
   id        String     @id @default(uuid())
   name      String     @unique
   capacity  Int        @default(20)
-  latitude  Float?   
-  longitude Float? 
+  latitude  Float?
+  longitude Float?
   cycles    Cycle[]
   startLogs AuditLog[] @relation("StartHub")
   endLogs   AuditLog[] @relation("EndHub")
 }
 
 model AuditLog {
-  id             String   @id @default(uuid())
+  id             String      @id @default(uuid())
   cycleId        String
-  cycle          Cycle    @relation(fields: [cycleId], references: [id])
-  userId         String   // rider's User.id when known, or a sentinel like "admin-staff" for staff actions
+  cycle          Cycle       @relation(fields: [cycleId], references: [id])
+  /// Rider User.id when known; staff actions may use a sentinel like "admin-staff".
+  userId         String
   startHubId     String
-  startHub       Hub      @relation("StartHub", fields: [startHubId], references: [id])
+  startHub       Hub         @relation("StartHub", fields: [startHubId], references: [id])
   endHubId       String?
-  endHub         Hub?     @relation("EndHub", fields: [endHubId], references: [id])
+  endHub         Hub?        @relation("EndHub", fields: [endHubId], references: [id])
   latitude       Float?
   longitude      Float?
-  distanceMeters Float?   // actual GPS-tracked ride distance, recorded on DROP_OFF when available
-  action         String   // CHECKOUT, DROP_OFF, REPORT_FAULT, REPAIRED
-  createdAt      DateTime @default(now())
+  distanceMeters Float?
+  action         AuditAction
+  createdAt      DateTime    @default(now())
+
+  @@index([action, createdAt])
 }

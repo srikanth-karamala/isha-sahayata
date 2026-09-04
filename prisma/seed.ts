@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { CycleStatus, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -69,13 +69,17 @@ async function main() {
     hubsByName[hub.name] = row;
   }
 
-  const cycles = [
-    { qrCode: 'ISHA-CYC-101', status: 'AVAILABLE', currentHubId: hubsByName['Spanda Hall'].id },
-    { qrCode: 'ISHA-CYC-102', status: 'AVAILABLE', currentHubId: hubsByName['Opposite Spanda Hall'].id },
-    { qrCode: 'ISHA-CYC-103', status: 'MAINTENANCE', currentHubId: hubsByName['Biksha Hall'].id },
-    { qrCode: 'ISHA-CYC-104', status: 'AVAILABLE', currentHubId: hubsByName['Main Gate'].id },
-    { qrCode: 'ISHA-CYC-105', status: 'AVAILABLE', currentHubId: hubsByName['Kondrai'].id },
-    { qrCode: 'ISHA-CYC-106', status: 'AVAILABLE', currentHubId: hubsByName['Sivapadam 2'].id },
+  const cycles: {
+    qrCode: string;
+    status: CycleStatus;
+    currentHubId: string;
+  }[] = [
+    { qrCode: 'ISHA-CYC-101', status: CycleStatus.AVAILABLE, currentHubId: hubsByName['Spanda Hall'].id },
+    { qrCode: 'ISHA-CYC-102', status: CycleStatus.AVAILABLE, currentHubId: hubsByName['Opposite Spanda Hall'].id },
+    { qrCode: 'ISHA-CYC-103', status: CycleStatus.MAINTENANCE, currentHubId: hubsByName['Biksha Hall'].id },
+    { qrCode: 'ISHA-CYC-104', status: CycleStatus.AVAILABLE, currentHubId: hubsByName['Main Gate'].id },
+    { qrCode: 'ISHA-CYC-105', status: CycleStatus.AVAILABLE, currentHubId: hubsByName['Kondrai'].id },
+    { qrCode: 'ISHA-CYC-106', status: CycleStatus.AVAILABLE, currentHubId: hubsByName['Sivapadam 2'].id },
   ];
 
   for (const cycle of cycles) {

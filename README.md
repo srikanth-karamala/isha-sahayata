@@ -48,7 +48,7 @@ Aligned with Isha volunteering surfaces: Fedra / Mukta typography hierarchy, qui
 | --- | --- | --- |
 | App | **Next.js 16** (App Router) + **React 19** | Server Actions for checkout / drop-off / fault / repair; phone-shell UI |
 | Styling | **Tailwind CSS v4** + `app/globals.css` | Utility layout + Isha tokens (`--primary`, `--paper`, Fedra classes) |
-| Data | **Prisma 5** + **SQLite** | Simple local inventory (`Hub`, `Cycle`, `Ride`, `User`, `AuditLog`) |
+| Data | **Prisma 5** + **Postgres 16** | Concurrent-safe inventory; enums for status/action; `RidePathPoint` rows instead of JSON blobs |
 | Map | **MapLibre GL 6** | Pitched campus view, markers, offline raster tiles |
 | Basemap | Local Esri World Imagery tiles under `public/tiles/isha/` | Avoids flaky remote tile SSL in this environment; regen via `scripts/download-campus-tiles.mjs` |
 | Scan | **html5-qrcode** | Camera QR → cycle lookup |
@@ -71,9 +71,19 @@ Aligned with Isha volunteering surfaces: Fedra / Mukta typography hierarchy, qui
 
 ## Run locally
 
+Start Postgres (Docker). Host port **5434** avoids clashing with other local DBs on 5432:
+
+```bash
+docker compose up -d
+# or: docker run -d --name yellow-cycle-postgres -e POSTGRES_USER=yellow -e POSTGRES_PASSWORD=yellow -e POSTGRES_DB=yellow_cycle -p 5434:5432 postgres:16-alpine
+```
+
+Then:
+
 ```bash
 pnpm install
-pnpm exec prisma db push
+cp .env.example .env   # if needed
+pnpm exec prisma migrate deploy
 pnpm exec prisma db seed
 pnpm dev
 ```
@@ -82,10 +92,8 @@ pnpm dev
 - Staff: `/admin` — passcode from `.env` → `ADMIN_PASSCODE` (default in local `.env`: `yellow123`)
 - Sample QR codes from seed: `ISHA-CYC-101` … `ISHA-CYC-106` (`ISHA-CYC-103` starts in `MAINTENANCE`)
 
-Copy `.env` keys as needed:
-
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://yellow:yellow@127.0.0.1:5434/yellow_cycle?schema=public"
 ADMIN_PASSCODE="yellow123"
 ```
 
@@ -100,10 +108,11 @@ node scripts/download-campus-tiles.mjs
 ## Data model (short)
 
 - **Hub** — named dock with lat/lng + capacity  
-- **Cycle** — QR, status, current hub, optional fault/repair photo URLs  
-- **Ride** — active path / distance while checked out  
+- **Cycle** — QR, `CycleStatus` enum (`AVAILABLE` / `IN_USE` / `MAINTENANCE`), current hub, optional fault/repair photo URLs  
+- **Ride** — `RideStatus` enum; `userId` is a real FK to `User`; distance + last GPS while active  
+- **RidePathPoint** — ordered GPS samples (`seq`) for a ride (replaces the old `pathJson` blob)  
 - **User** — rider name + phone  
-- **AuditLog** — CHECKOUT / DROP_OFF / REPORT_FAULT / REPAIRED  
+- **AuditLog** — `AuditAction` enum (`CHECKOUT` / `DROP_OFF` / `REPORT_FAULT` / `REPAIRED`); staff may use sentinel `userId` `admin-staff`  
 
 Uploads land in `public/uploads/{faults,repairs}/` (gitignored).
 

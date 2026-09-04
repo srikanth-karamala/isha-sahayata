@@ -7,7 +7,7 @@ import { repairCycle, getActiveRides } from '@/app/actions';
 import { adminLogout } from './auth-actions';
 import { Wrench, CheckCircle2, MapPin, AlertTriangle, ArrowLeft, LogOut, Camera } from 'lucide-react';
 import Link from 'next/link';
-import type { HubSummary, LiveRide } from '@/lib/types';
+import type { CycleStatus, HubSummary, LiveRide } from '@/lib/types';
 import { formatDistance } from '@/lib/geo';
 
 const MapView = dynamic(() => import('@/components/MapView'), {
@@ -22,7 +22,7 @@ const MapView = dynamic(() => import('@/components/MapView'), {
 interface Cycle {
   id: string;
   qrCode: string;
-  status: string;
+  status: CycleStatus;
   issueNotes?: string | null;
   issuePhotoUrl?: string | null;
   latitude?: number | null;

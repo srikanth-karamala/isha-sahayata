@@ -1,9 +1,11 @@
-export type CycleStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE';
+import type { CycleStatus } from '@prisma/client';
+
+export type { CycleStatus };
 
 export interface CycleSummary {
   id: string;
   qrCode: string;
-  status: string;
+  status: CycleStatus;
 }
 
 export interface HubSummary {
@@ -18,7 +20,7 @@ export interface HubSummary {
 export interface CycleDetail {
   id: string;
   qrCode: string;
-  status: string;
+  status: CycleStatus;
   currentHubId: string;
   heldByUserId: string | null;
   issueNotes: string | null;
