@@ -59,6 +59,12 @@ export default function StaffConsole({
     },
   ];
 
+  const panels: Record<StaffTab, ReactNode> = {
+    overview,
+    cycles,
+    'lost-found': lostFound,
+  };
+
   return (
     <div className="yc-staff min-h-dvh">
       <div className="mx-auto w-full max-w-[1400px] px-4 md:px-7 py-6 md:py-8">
@@ -101,11 +107,9 @@ export default function StaffConsole({
           ))}
         </nav>
 
-        <div className="s-tab-body">
-          {tab === 'overview' && overview}
-          {tab === 'cycles' && cycles}
-          {tab === 'lost-found' && lostFound}
-        </div>
+        {/* Resolved to a single node rather than three conditional siblings:
+            siblings make React treat the panels as a list and ask for keys. */}
+        <div className="s-tab-body">{panels[tab]}</div>
       </div>
     </div>
   );
