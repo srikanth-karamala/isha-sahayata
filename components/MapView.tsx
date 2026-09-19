@@ -229,15 +229,51 @@ function MapView({
     }
 
     if (!fittedRef.current && points.length >= 2) {
-      const bounds = new LngLatBounds(points[0], points[0]);
-      points.forEach((point) => bounds.extend(point));
-      map.fitBounds(bounds, {
-        padding: { top: 132, bottom: 280, left: 40, right: 64 },
-        maxZoom: 17,
-        duration: 700,
-        ...cameraExtras(),
-      });
-      fittedRef.current = true;
+      const el = map.getContainer();
+      const width = el.clientWidth;
+      const height = el.clientHeight;
+
+      // The rider layout reserves room for the header and the bottom sheet.
+      // In a short container — the admin's live-rides panel, or any map whose
+      // tab is hidden and therefore zero-sized — that padding exceeds the
+      // canvas and MapLibre refuses the fit with a console warning. Scale the
+      // padding to what the canvas can actually give, and skip the fit
+      // entirely until the map has been laid out.
+      // fitBounds warns when the padding leaves no usable area. Cap each axis
+      // at a third of the container so a meaningful viewport always remains,
+      // and weight the vertical split toward the bottom, where the rider's
+      // sheet sits. Measured in CSS pixels, which is what fitBounds expects.
+      if (width > 120 && height > 120) {
+        const padX = Math.floor(Math.min(width / 3, 104) / 2);
+        const padY = Math.floor(Math.min(height / 3, 240));
+
+        const bounds = new LngLatBounds(points[0], points[0]);
+        points.forEach((point) => bounds.extend(point));
+
+        // cameraForBounds warns when it cannot honour the request exactly —
+        // here the hubs sit close enough together that framing them wants a
+        // zoom above maxZoom, so the camera is clamped and a warning is
+        // logged even though the result is correct. Compute the camera first
+        // and apply it with easeTo, which performs no such check.
+        const camera = map.cameraForBounds(bounds, {
+          padding: {
+            top: Math.round(padY * 0.32),
+            bottom: Math.round(padY * 0.68),
+            left: padX,
+            right: padX,
+          },
+        });
+
+        if (camera) {
+          map.easeTo({
+            center: camera.center,
+            zoom: Math.min(camera.zoom ?? 16.2, 17),
+            duration: 700,
+            ...cameraExtras(),
+          });
+        }
+        fittedRef.current = true;
+      }
     }
   }, [hubs, selectedHubId]);
 

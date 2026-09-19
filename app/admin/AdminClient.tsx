@@ -270,30 +270,56 @@ export default function AdminClient({
                   ))}
                 </select>
 
-                <label className="yc-meta flex items-center gap-1">
-                  <Camera className="w-3.5 h-3.5" />
-                  Repair photo required
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    void readFileAsDataUrl(file).then((dataUrl) => {
-                      setRepairPhotos((prev) => ({ ...prev, [cycle.qrCode]: dataUrl }));
-                    });
-                  }}
-                  className="block w-full text-xs text-[var(--muted)]"
-                />
-                {repairPhotos[cycle.qrCode] && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={repairPhotos[cycle.qrCode]}
-                    alt="Repair proof"
-                    className="w-full max-h-28 object-cover rounded-xl border border-[var(--separator)]"
-                  />
+                {/* A bare file input renders as a small "Choose File" control
+                    with system styling and a tap target to match. Wrapping it
+                    in a label gives a full-width button that opens the camera
+                    directly on a phone. */}
+                {repairPhotos[cycle.qrCode] ? (
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={repairPhotos[cycle.qrCode]}
+                      alt={`Repair proof for ${cycle.qrCode}`}
+                      className="w-full max-h-32 object-cover rounded-[0.9rem] border border-[var(--s-line,var(--separator))]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRepairPhotos((prev) => {
+                          const next = { ...prev };
+                          delete next[cycle.qrCode];
+                          return next;
+                        })
+                      }
+                      className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-black/60 text-white text-[11px] font-semibold"
+                    >
+                      Retake
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    className="s-btn s-btn-quiet w-full cursor-pointer"
+                    style={{ borderStyle: 'dashed' }}
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Take repair photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        void readFileAsDataUrl(file).then((dataUrl) => {
+                          setRepairPhotos((prev) => ({
+                            ...prev,
+                            [cycle.qrCode]: dataUrl,
+                          }));
+                        });
+                      }}
+                    />
+                  </label>
                 )}
 
                 <button
