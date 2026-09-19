@@ -1,22 +1,50 @@
-import { mkdir, writeFile } from 'fs/promises';
-import path from 'path';
-import { randomUUID } from 'crypto';
+import { prisma } from '@/lib/prisma';
 
-/** Persist a camera data-URL under public/uploads and return the public path. */
-export async function saveUploadDataUrl(dataUrl: string, folder: 'faults' | 'repairs' | 'lost-found') {
+/**
+ * Photo storage.
+ *
+ * Photos live in Postgres rather than on disk. The app deploys to serverless
+ * hosting where the filesystem is read-only and discarded between invocations,
+ * so the previous approach — writing into public/uploads — worked locally and
+ * would have thrown in production on the first repair confirmation, which
+ * requires a photo.
+ *
+ * These are phone snapshots of a bicycle fault or a found item, a few hundred
+ * kilobytes each, so a bytea column is simpler than adding an object store and
+ * behaves identically in both environments.
+ */
+
+const MAX_BYTES = 4.5 * 1024 * 1024;
+
+export type UploadFolder = 'faults' | 'repairs' | 'lost-found';
+
+/**
+ * Persist a camera data-URL and return the path the app serves it from.
+ * The returned value goes straight into an <img src>.
+ */
+export async function saveUploadDataUrl(dataUrl: string, folder: UploadFolder) {
   const match = /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i.exec(dataUrl);
   if (!match) throw new Error('Please upload a photo from the camera or gallery.');
 
-  const mime = match[1].toLowerCase();
-  const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
-  const buffer = Buffer.from(match[2], 'base64');
-  if (buffer.byteLength > 4.5 * 1024 * 1024) {
+  const mimeType = match[1].toLowerCase();
+  const bytes = Buffer.from(match[2], 'base64');
+
+  if (bytes.byteLength > MAX_BYTES) {
     throw new Error('Photo is too large. Use a smaller image (under 4.5 MB).');
   }
 
-  const dir = path.join(process.cwd(), 'public', 'uploads', folder);
-  await mkdir(dir, { recursive: true });
-  const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
-  await writeFile(path.join(dir, filename), buffer);
-  return `/uploads/${folder}/${filename}`;
+  const row = await prisma.upload.create({
+    data: { folder, mimeType, bytes },
+    select: { id: true },
+  });
+
+  return `/api/uploads/${row.id}`;
+}
+
+/** Read one stored photo back, for the route that serves it. */
+export async function getUpload(id: string) {
+  return prisma.upload.findUnique({
+    where: { id },
+    select: { mimeType: true, bytes: true },
+  });
 }
