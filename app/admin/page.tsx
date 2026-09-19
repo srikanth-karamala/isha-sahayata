@@ -6,7 +6,7 @@ import {
   getTodayDemand,
 } from '@/lib/analytics';
 import { generateBriefing } from '@/lib/briefing';
-import { getLostFoundSummary, getOpenItems } from '@/app/lost-found-actions';
+import { getLostFoundSummary, getOpenItemsForStaff } from '@/app/lost-found-actions';
 import AdminClient from './AdminClient';
 import FleetInsights from '@/components/FleetInsights';
 import StaffConsole from './StaffConsole';
@@ -37,8 +37,8 @@ export default async function AdminPage() {
     getHourlyDemand(),
     getHubBalances(),
     getLostFoundSummary(),
-    getOpenItems('LOST', 20),
-    getOpenItems('FOUND', 20),
+    getOpenItemsForStaff('LOST', 20),
+    getOpenItemsForStaff('FOUND', 20),
   ]);
 
   // Depends on the aggregates above, so it runs after them.

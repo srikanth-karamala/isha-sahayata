@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, PackageSearch, HandHeart, CheckCircle2, Link2 } from 'lucide-react';
+import { Sparkles, PackageSearch, HandHeart, CheckCircle2, Link2, Phone } from 'lucide-react';
 import { confirmMatch, getLostFoundSummary } from '@/app/lost-found-actions';
 
 /**
@@ -14,7 +14,16 @@ import { confirmMatch, getLostFoundSummary } from '@/app/lost-found-actions';
  */
 
 type Summary = Awaited<ReturnType<typeof getLostFoundSummary>>;
-type Row = { id: string; title: string | null; description: string; hub: { name: string } | null; placeNote: string | null; occurredAt: Date; category: string | null };
+type Row = {
+  id: string;
+  title: string | null;
+  description: string;
+  hub: { name: string } | null;
+  placeNote: string | null;
+  occurredAt: Date;
+  category: string | null;
+  reportedBy: { name: string; phone: string };
+};
 
 function whenLabel(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -113,6 +122,15 @@ export default function LostFoundBoard({
                         {match.source.reportedBy.name} · {placeOf(match.source)} ·{' '}
                         {whenLabel(match.source.occurredAt)}
                       </p>
+                      {/* The number is the point of the pairing: staff have to
+                          ring the owner to arrange the handover. */}
+                      <a
+                        className="s-contact mt-1.5"
+                        href={`tel:${match.source.reportedBy.phone}`}
+                      >
+                        <Phone className="w-3 h-3 shrink-0" />
+                        {match.source.reportedBy.phone}
+                      </a>
                     </div>
 
                     <Link2
@@ -132,6 +150,13 @@ export default function LostFoundBoard({
                         {match.target.reportedBy.name} · {placeOf(match.target)} ·{' '}
                         {whenLabel(match.target.occurredAt)}
                       </p>
+                      <a
+                        className="s-contact mt-1.5"
+                        href={`tel:${match.target.reportedBy.phone}`}
+                      >
+                        <Phone className="w-3 h-3 shrink-0" />
+                        {match.target.reportedBy.phone}
+                      </a>
                     </div>
                   </div>
 
@@ -185,8 +210,13 @@ export default function LostFoundBoard({
                 >
                   <p className="s-h3">{item.title ?? item.description}</p>
                   <p className="s-meta mt-0.5">
-                    {placeOf(item)} · {whenLabel(item.occurredAt)}
+                    {item.reportedBy.name} · {placeOf(item)} ·{' '}
+                    {whenLabel(item.occurredAt)}
                   </p>
+                  <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
+                    <Phone className="w-3 h-3 shrink-0" />
+                    {item.reportedBy.phone}
+                  </a>
                 </li>
               ))}
             </ul>
@@ -211,8 +241,13 @@ export default function LostFoundBoard({
                 >
                   <p className="s-h3">{item.title ?? item.description}</p>
                   <p className="s-meta mt-0.5">
-                    {placeOf(item)} · {whenLabel(item.occurredAt)}
+                    {item.reportedBy.name} · {placeOf(item)} ·{' '}
+                    {whenLabel(item.occurredAt)}
                   </p>
+                  <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
+                    <Phone className="w-3 h-3 shrink-0" />
+                    {item.reportedBy.phone}
+                  </a>
                 </li>
               ))}
             </ul>

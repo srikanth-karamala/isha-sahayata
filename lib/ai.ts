@@ -175,3 +175,75 @@ export async function askForJson<T>(req: AiRequest): Promise<AiResult<T>> {
     return { data: null, provider: 'none' };
   }
 }
+
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Free-text conversation, for the visitor assistant.
+ *
+ * Separate from askForJson because that one requires a JSON schema on every
+ * call: the other three AI features want a parsed object, whereas this one
+ * wants prose. Sharing the provider selection and the never-throw contract,
+ * but not the structured-output plumbing.
+ *
+ * Returns null rather than throwing, so an unreachable model degrades to a
+ * "cannot reach the assistant" message instead of an error screen.
+ */
+export async function askForText(
+  system: string,
+  history: ChatTurn[],
+  maxTokens = 600
+): Promise<AiResult<string>> {
+  const provider = activeProvider();
+  if (provider === 'none') return { data: null, provider };
+
+  try {
+    if (provider === 'anthropic') {
+      const { default: Anthropic } = await import('@anthropic-ai/sdk');
+      const client = new Anthropic();
+      const response = await client.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: maxTokens,
+        system,
+        messages: history.map((t) => ({ role: t.role, content: t.content })),
+      });
+      const block = response.content.find((b) => b.type === 'text');
+      return {
+        data: block && block.type === 'text' ? block.text : null,
+        provider,
+      };
+    }
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROQ_TEXT_MODEL,
+        max_completion_tokens: maxTokens,
+        // Low but not zero: answers should be phrased naturally while staying
+        // close to the facts they are given.
+        temperature: 0.3,
+        messages: [{ role: 'system', content: system }, ...history],
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`Groq ${response.status}: ${detail.slice(0, 200)}`);
+    }
+
+    const body = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    return { data: body.choices?.[0]?.message?.content ?? null, provider };
+  } catch (error) {
+    console.error('[ai] chat call failed:', error);
+    return { data: null, provider: 'none' };
+  }
+}

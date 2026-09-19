@@ -953,6 +953,83 @@ body {
   transform: scale(0.97);
 }
 
+/* ---------------------------------------------------------------
+   Lost & Found actions.
+
+   Amber is the cycles flow's colour — scan, unlock, drop off — so
+   reusing it here made reporting a lost bottle look like the same
+   kind of act as taking a cycle.
+
+   Both are tinted rather than solid: these two sit side by side as
+   a question ("which are you here for?"), not as a primary action
+   with an afterthought, and a solid fill on either made it read as
+   the recommended one. Losing something is the softer red, handing
+   something in the blue.
+
+   Ink is deep enough to carry the weight the fill no longer does:
+   #b3261e on #fdeceb measures 5.72:1 and #16478f on #eaf1fc 7.93:1,
+   both clearing WCAG AA. The fills themselves are only 1.12 against
+   the card, so each keeps a visible border to hold its shape.
+   --------------------------------------------------------------- */
+.yc-btn-lf {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.85rem 1rem;
+  background: #fdeceb;
+  color: #b3261e;
+  font-family: var(--sans-med);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(179, 38, 30, 0.22);
+  transition: transform 0.22s var(--spring), background 0.16s ease;
+}
+
+.yc-btn-lf:hover { background: #fbdedc; }
+.yc-btn-lf:active { transform: scale(0.97); }
+
+.yc-btn-lf-quiet {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.85rem 1rem;
+  background: #eaf1fc;
+  color: #16478f;
+  font-family: var(--sans-med);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(22, 71, 143, 0.22);
+  transition: transform 0.22s var(--spring), background 0.16s ease;
+}
+
+.yc-btn-lf-quiet:hover { background: #dde9fa; }
+.yc-btn-lf-quiet:active { transform: scale(0.97); }
+
+/* Commit actions inside the flow — send the report, claim a match,
+   dismiss the confirmation. These are not the two-way choice above,
+   so they stay solid: there is one thing to do and it should look
+   like it. White on #1f5fbf measures 6.09:1. */
+.yc-btn-lf-go {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.85rem 1rem;
+  background: #1f5fbf;
+  color: #fff;
+  font-family: var(--sans-med);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 18px rgba(31, 95, 191, 0.22);
+  transition: transform 0.22s var(--spring), background 0.16s ease;
+}
+
+.yc-btn-lf-go:hover { background: #16478f; }
+.yc-btn-lf-go:active { transform: scale(0.97); }
+
 .yc-btn-ghost {
   width: 100%;
   min-height: 2.75rem;
@@ -1253,6 +1330,18 @@ body {
 .yc-staff .s-h3 { font-size: 15.5px; font-weight: 650; letter-spacing: -.01em; }
 .yc-staff .s-body { font-size: 14.5px; line-height: 1.6; color: var(--s-ink-2); }
 .yc-staff .s-meta { font-size: 12.5px; color: var(--s-muted); line-height: 1.5; }
+/* A reporter's number, as something to act on rather than more metadata: it
+   carries the accent and is a tel: link, so a volunteer at the desk taps to
+   ring instead of copying digits across to a phone. */
+.yc-staff .s-contact {
+  /* flex, not inline-flex: these carry a Tailwind top margin, which an
+     inline box would not lay out reliably. */
+  display: flex; align-items: center; gap: 5px; width: fit-content;
+  font-size: 12.5px; font-weight: 650; line-height: 1.4;
+  color: var(--s-accent-ink); text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.yc-staff .s-contact:hover { text-decoration: underline; }
 .yc-staff .s-eyebrow {
   font-size: 11px; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--s-muted);
@@ -1530,4 +1619,179 @@ body {
     animation: none;
     transition: none;
   }
+}
+
+/* ===============================================================
+   Sahayata AI — floating assistant
+
+   Anchored to the phone shell rather than the viewport so it stays
+   inside the device frame on desktop. It sits above the bottom nav
+   but below the modals (z 40+), because a modal is a task in
+   progress and the assistant must not cover it.
+   =============================================================== */
+
+/* Trigger inside the rider header, beside the stat block.
+
+   It was previously a floating button over the map, which put it on top of
+   the imagery credit and the map controls, and — as a wide amber pill sitting
+   just above the amber "Scan to unlock" — made two primary actions compete.
+   In the header it holds one fixed position on every tab and never covers
+   content. Amber-tinted so it reads as an offer rather than a warning, and
+   44px square to stay a comfortable tap target. */
+.yc-assist-trigger {
+  /* 2.95rem so the rendered box clears 44px even after the header's flex
+     alignment shaves a little off — measured at 41px at 2.75rem. */
+  width: 2.95rem;
+  height: 2.95rem;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.15rem;
+  border-radius: 999px;
+  border: 1px solid rgba(202, 138, 4, 0.35);
+  background: var(--primary-light);
+  color: #7a5203;
+  transition: transform 0.2s var(--spring), background 0.16s ease;
+}
+
+.yc-assist-trigger:hover { background: #fcd968; }
+.yc-assist-trigger:active { transform: scale(0.93); }
+
+.yc-assist-panel {
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  /* Drops from just under the header, where its trigger now lives, and stops
+     short of the nav so the tab bar stays reachable while it is open. */
+  top: calc(var(--header-top) + 4.6rem);
+  bottom: 5.4rem;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.5rem;
+  /* Opaque, not the translucent --surface: this panel covers the map and the
+     dock sheet, and at 92% alpha the pins and "Nearby docks" text showed
+     through the conversation and made both hard to read. */
+  background: #fffdf8;
+  border: 1px solid var(--separator);
+  box-shadow: 0 18px 44px rgba(20, 18, 16, 0.24);
+  overflow: hidden;
+}
+
+.yc-assist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--separator);
+}
+
+.yc-assist-title {
+  font-family: var(--sans-med);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.yc-assist-sub {
+  font-size: 11.5px;
+  color: var(--secondary-label);
+  margin-top: 1px;
+}
+
+.yc-assist-close {
+  flex: none;
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--muted);
+}
+
+.yc-assist-log {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.85rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.yc-assist-intro { margin-bottom: 0.2rem; }
+
+.yc-assist-openers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.yc-assist-chip {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--separator);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.yc-assist-you,
+.yc-assist-bot {
+  max-width: 86%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 1.05rem;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.yc-assist-you {
+  align-self: flex-end;
+  background: var(--primary-light);
+  color: var(--ink);
+  border-bottom-right-radius: 0.4rem;
+}
+
+.yc-assist-bot {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--separator);
+  border-bottom-left-radius: 0.4rem;
+}
+
+.yc-assist-typing { color: var(--muted); font-style: italic; }
+
+.yc-assist-compose {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem 0.2rem;
+  border-top: 1px solid var(--separator);
+}
+
+.yc-assist-send {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--ink);
+}
+
+.yc-assist-send:disabled { opacity: 0.45; }
+
+.yc-assist-foot {
+  padding: 0.35rem 0.9rem 0.7rem;
+  font-size: 11px;
+  color: var(--muted);
 }

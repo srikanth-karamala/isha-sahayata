@@ -17,6 +17,8 @@ import {
   confirmMatch,
   dismissMatch,
 } from '@/app/lost-found-actions';
+import { getOrCreateUser } from '@/app/actions';
+import { saveRiderIdentity, type RiderIdentity } from '@/lib/rider-identity';
 import type { HubSummary } from '@/lib/types';
 
 /**
@@ -49,14 +51,20 @@ type OpenRow = Awaited<ReturnType<typeof getOpenItems>>[number];
 
 export default function LostFoundPanel({
   userId,
+  riderName,
+  riderPhone,
+  onIdentityChange,
   hubs,
   userPos,
-  onNeedIdentity,
 }: {
   userId: string | null;
+  /** Saved rider identity, used to prefill the contact fields. */
+  riderName: string;
+  riderPhone: string;
+  /** Called when the form saves a changed name or number. */
+  onIdentityChange: (identity: RiderIdentity) => void;
   hubs: HubSummary[];
   userPos: [number, number] | null;
-  onNeedIdentity: () => void;
 }) {
   const [mode, setMode] = useState<Mode>('browse');
   const [description, setDescription] = useState('');
@@ -66,6 +74,19 @@ export default function LostFoundPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<{ matchCount: number; title: string } | null>(null);
+
+  // Contact details are shown on the form rather than left implicit, because
+  // whoever is holding the object needs to reach the other party — and a person
+  // reporting a lost item should be able to see, and correct, the number that
+  // will be rung. They prefill from the saved identity and write back to it, so
+  // there is still one contact record per person rather than a copy per report.
+  // Held as "edited or not" rather than copied from the props, so a saved
+  // identity arriving after mount still shows through without an effect that
+  // writes props into state on every change.
+  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  const [phoneEdit, setPhoneEdit] = useState<string | null>(null);
+  const name = nameEdit ?? riderName;
+  const phone = phoneEdit ?? riderPhone;
 
   const [myReports, setMyReports] = useState<ReportRow[]>([]);
   const [recentFound, setRecentFound] = useState<OpenRow[]>([]);
@@ -102,18 +123,33 @@ export default function LostFoundPanel({
 
   const submit = async (kind: 'LOST' | 'FOUND') => {
     if (!description.trim()) return;
-    if (!userId) {
-      onNeedIdentity();
+    if (!name.trim() || !phone.trim()) {
+      setError('Add a name and number so you can be reached.');
       return;
     }
     setBusy(true);
     setError('');
     try {
+      // The contact fields are the authority here, not the stored id: the
+      // rider may have corrected either one. getOrCreateUser upserts on phone,
+      // so an edited name updates the existing person and a new number creates
+      // one, and either way the report is attached to a reachable record.
+      const user = await getOrCreateUser(name, phone);
+      const identity: RiderIdentity = {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+      };
+      if (user.id !== userId || user.name !== riderName || user.phone !== riderPhone) {
+        saveRiderIdentity(identity);
+        onIdentityChange(identity);
+      }
+
       const [lat, lng] = userPos ?? [undefined, undefined];
       const res = await reportLostOrFound({
         kind,
         description,
-        userId,
+        userId: user.id,
         hubId: hubId || null,
         placeNote,
         photoDataUrl: photo,
@@ -167,7 +203,7 @@ export default function LostFoundPanel({
             setMode('browse');
             setResult(null);
           }}
-          className="yc-btn-primary w-full mt-4"
+          className="yc-btn-lf-go w-full mt-4"
         >
           Done
         </button>
@@ -257,6 +293,50 @@ export default function LostFoundPanel({
           />
         </div>
 
+        {/* Contact details sit with the report rather than behind a separate
+            gate, so it is obvious who will be rung and the rider can fix a
+            wrong number before sending. */}
+        <div className="pt-1">
+          <p className="yc-eyebrow mb-1.5">
+            {isLost ? 'How can we reach you?' : 'Your contact, for the owner'}
+          </p>
+          <div className="space-y-2">
+            <div>
+              <label htmlFor="lf-name" className="sr-only">
+                Your name
+              </label>
+              <input
+                id="lf-name"
+                value={name}
+                onChange={(e) => setNameEdit(e.target.value)}
+                placeholder="Your name"
+                autoComplete="name"
+                className="yc-field w-full"
+              />
+            </div>
+            <div>
+              <label htmlFor="lf-phone" className="sr-only">
+                Your phone number
+              </label>
+              <input
+                id="lf-phone"
+                value={phone}
+                onChange={(e) => setPhoneEdit(e.target.value)}
+                placeholder="Phone number"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                className="yc-field w-full"
+              />
+            </div>
+          </div>
+          <p className="yc-meta mt-1.5">
+            {isLost
+              ? 'Shared with whoever hands in a matching item, and with staff.'
+              : 'Shared with the owner once they confirm the item is theirs.'}
+          </p>
+        </div>
+
         {photo ? (
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -300,8 +380,8 @@ export default function LostFoundPanel({
         <button
           type="button"
           onClick={() => submit(isLost ? 'LOST' : 'FOUND')}
-          disabled={!description.trim() || busy}
-          className="yc-btn-primary w-full disabled:opacity-50"
+          disabled={!description.trim() || !name.trim() || !phone.trim() || busy}
+          className="yc-btn-lf-go w-full disabled:opacity-50"
         >
           {busy ? 'Checking for matches…' : isLost ? 'Report it lost' : 'Hand it in'}
         </button>
@@ -326,7 +406,7 @@ export default function LostFoundPanel({
         <button
           type="button"
           onClick={() => setMode('lost')}
-          className="yc-btn-primary flex items-center justify-center gap-2 py-3"
+          className="yc-btn-lf flex items-center justify-center gap-2 py-3"
         >
           <PackageSearch className="w-4 h-4" />
           I lost something
@@ -334,8 +414,7 @@ export default function LostFoundPanel({
         <button
           type="button"
           onClick={() => setMode('found')}
-          className="yc-btn-ghost flex items-center justify-center gap-2 py-3"
-          style={{ border: '1px solid var(--separator)', borderRadius: '1rem' }}
+          className="yc-btn-lf-quiet flex items-center justify-center gap-2 py-3"
         >
           <HandHeart className="w-4 h-4" />
           I found something
@@ -410,7 +489,7 @@ export default function LostFoundPanel({
                               await confirmMatch(report.id, match.targetId);
                               await refresh();
                             }}
-                            className="yc-btn-primary flex-1 text-xs py-1.5"
+                            className="yc-btn-lf-go flex-1 text-xs py-1.5"
                           >
                             That&apos;s mine
                           </button>

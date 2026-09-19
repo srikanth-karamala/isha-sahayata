@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { QrCode, ShieldAlert } from 'lucide-react';
+import { QrCode, ShieldAlert, Sparkles } from 'lucide-react';
 import PhoneShell from './PhoneShell';
 import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
 import BottomNav, { type RiderTab } from './BottomNav';
+import AssistantChat from './AssistantChat';
 import ReportFaultPanel from './ReportFaultPanel';
 import LostFoundPanel from './LostFoundPanel';
 import { getOpenItems } from '@/app/lost-found-actions';
@@ -49,6 +50,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   // When the report panel asks for a scan, the scanned code lands here.
   const [scanTarget, setScanTarget] = useState<'unlock' | 'report'>('unlock');
   const [reportQr, setReportQr] = useState<string | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   // The map earns its place on the Cycles tab and during a ride; elsewhere it
   // is decoration behind a full-height panel.
@@ -364,6 +366,21 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                   </p>
                 )}
               </div>
+
+              {/* Sahayata AI lives in the header rather than floating over the
+                  map: down there it covered the imagery credit and the map
+                  controls, and a second amber pill above "Scan to unlock" read
+                  as a competing primary action. Here it is always in the same
+                  place, on every tab, and reachable with a thumb. */}
+              <button
+                type="button"
+                onClick={() => setAssistantOpen(true)}
+                className="yc-assist-trigger shrink-0"
+                aria-label="Ask Sahayata AI"
+                title="Ask Sahayata AI"
+              >
+                <Sparkles className="w-[1.05rem] h-[1.05rem]" aria-hidden />
+              </button>
             </div>
             {showMap && !userPos && !tracker.currentPos && !activeRide && (
               <button
@@ -479,9 +496,11 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             ) : tab === 'lost-found' ? (
               <LostFoundPanel
                 userId={rider?.id ?? null}
+                riderName={rider?.name ?? ''}
+                riderPhone={rider?.phone ?? ''}
+                onIdentityChange={setRider}
                 hubs={hubs}
                 userPos={userPos}
-                onNeedIdentity={() => setNeedsIdentity(true)}
               />
             ) : (
               <>
@@ -582,6 +601,11 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 drop-off controls stay the only thing to act on. */}
             {!activeRide && <BottomNav active={tab} onChange={setTab} />}
           </div>
+
+          <AssistantChat
+            open={assistantOpen}
+            onClose={() => setAssistantOpen(false)}
+          />
         </div>
 
         {needsIdentity && (

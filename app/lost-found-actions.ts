@@ -188,11 +188,32 @@ export async function getMyReports(userId: string) {
   return items;
 }
 
-/** Open reports of one kind, newest first — the public browse list. */
+/**
+ * Open reports of one kind, newest first — the public browse list.
+ *
+ * Deliberately does NOT include the reporter. This runs from the rider client
+ * component, so anything selected here is serialised into every rider's page
+ * whether it is rendered or not; contact details belong only in the staff
+ * query below.
+ */
 export async function getOpenItems(kind: LostFoundKind, limit = 30) {
   return prisma.lostFoundItem.findMany({
     where: { kind, status: LostFoundStatus.OPEN },
     include: { hub: true },
+    orderBy: { occurredAt: 'desc' },
+    take: limit,
+  });
+}
+
+/**
+ * The same list for the staff console, with the reporter's contact attached so
+ * a volunteer at the desk can ring whoever filed the report. Separate from
+ * getOpenItems because that one is reachable from the rider app.
+ */
+export async function getOpenItemsForStaff(kind: LostFoundKind, limit = 30) {
+  return prisma.lostFoundItem.findMany({
+    where: { kind, status: LostFoundStatus.OPEN },
+    include: { hub: true, reportedBy: true },
     orderBy: { occurredAt: 'desc' },
     take: limit,
   });
