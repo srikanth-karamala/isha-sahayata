@@ -113,6 +113,15 @@ coloured text.
 map for a short list, but unusable for a form — satellite imagery showed through
 the text boxes. Forms and the nav bar use `.yc-sheet-solid`.
 
+**Photos live in Postgres, not on disk.** `lib/uploads.ts` writes an `Upload`
+row and returns `/api/uploads/<id>`; the route serves the bytes back. The
+original version wrote into `public/uploads`, which works locally and fails on
+serverless hosting where the filesystem is read-only. `repairCycle` *requires* a
+photo, so that would have thrown on every repair confirmation in production —
+a demo-killer that only surfaces once deployed. A bytea column was chosen over
+object storage because these are phone snapshots of a few hundred kilobytes and
+it needs no extra service or account.
+
 **The map is not rendered on tabs that do not use it.** Report and Lost & Found
 show a plain ground instead. This removes the 3D/locate/zoom controls with it
 and avoids running a WebGL canvas behind an opaque panel.
@@ -165,6 +174,26 @@ preserves hubs. The hub seed itself is `pnpm exec prisma db seed`.
 The overnight redistribution step in the seed exists because without it the
 evening pull toward the accommodation hubs compounds nightly and the whole fleet
 ends up parked at two small stations.
+
+---
+
+## Deployment
+
+See `DEPLOY.md` for the steps. Decisions taken:
+
+- **Neon** for hosted Postgres — free tier, integrates with Vercel directly.
+  Its free tier sleeps when idle, so open the link once before a demo to wake
+  it.
+- **Vercel** for hosting, deploying from a private GitHub repository.
+  Private because `ADMIN_PASSCODE` is real.
+- **Photos in the database** rather than Vercel Blob, so there is no second
+  service to configure and local and deployed behaviour are identical.
+
+Three environment variables are needed in Vercel: `DATABASE_URL`,
+`ADMIN_PASSCODE`, `GROQ_API_KEY`.
+
+Pointing local `.env` at Neon aims local development at production data — keep
+the local connection string somewhere to switch back.
 
 ---
 
