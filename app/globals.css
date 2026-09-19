@@ -1796,26 +1796,17 @@ body {
   color: var(--muted);
 }
 
-/* Lists on the staff console that grow with use — suggested pairings, and the
-   two open-report columns. Left unbounded they pushed the page taller every
-   time someone filed a report, so the stat row and the pairings scrolled out
-   of reach on a laptop. Capped and scrolled instead, with the cap in vh so a
-   tall screen still shows more rows rather than wasting the space. */
-.yc-staff .s-scroll {
-  max-height: 26rem;
-  overflow-y: auto;
-  /* Keeps the last row from sitting flush against the fade of the edge. */
-  padding-right: 2px;
-  overscroll-behavior: contain;
-}
+/* Stat row: three numbers that orient rather than inform in depth, so they
+   are a compact band rather than three tall cards pushing the pairings — the
+   reason staff opened the page — below the fold. */
+.yc-staff .s-statrow .s-card { padding: 14px 16px; }
+.yc-staff .s-statrow .s-num { font-size: 24px; margin-top: 2px; }
 
-.yc-staff .s-scroll-tall { max-height: min(60vh, 34rem); }
-
-/* Unobtrusive scrollbar — this is a data surface, not a document. */
-.yc-staff .s-scroll::-webkit-scrollbar { width: 8px; }
-.yc-staff .s-scroll::-webkit-scrollbar-track { background: transparent; }
-.yc-staff .s-scroll::-webkit-scrollbar-thumb {
-  background: var(--s-line);
-  border-radius: 999px;
+/* The rider app is a fixed phone frame: it manages its own internal scrolling
+   and the page itself must never move. This replaces the global body lock that
+   used to do the same job, which also froze the staff console. */
+html:has(.yc-phone-stage),
+body:has(.yc-phone-stage) {
+  overflow: hidden;
+  height: 100%;
 }
-.yc-staff .s-scroll::-webkit-scrollbar-thumb:hover { background: var(--s-faint); }

@@ -27,7 +27,13 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased m-0 p-0 overflow-hidden">{children}</body>
+      {/* No overflow-hidden here. The rider app is a fixed phone frame that
+          must not scroll, and used to lock the body globally to get that — but
+          the staff console is an ordinary scrolling document behind the same
+          layout, so the lock left it unable to reach its own content with a
+          wheel or trackpad. The rider page opts into the lock itself via
+          .yc-phone-stage; see globals.css. */}
+      <body className="antialiased m-0 p-0">{children}</body>
     </html>
   );
 }
