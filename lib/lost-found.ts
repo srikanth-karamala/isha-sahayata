@@ -1,5 +1,5 @@
 import { ItemCategory, LostFoundKind } from '@prisma/client';
-import { askForJson, activeProvider } from '@/lib/ai';
+import { askForJson, activeProvider } from './ai';
 
 /**
  * AI matching for lost and found reports.

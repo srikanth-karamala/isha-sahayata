@@ -1,5 +1,5 @@
 import { FaultCategory, FaultSeverity } from '@prisma/client';
-import { askForJson, activeProvider } from '@/lib/ai';
+import { askForJson, activeProvider } from './ai';
 import { readFile } from 'fs/promises';
 import path from 'path';
 

@@ -1,5 +1,5 @@
 import type { FleetSummary, HubBalance, HourlyDemand } from '@/lib/analytics';
-import { askForJson, activeProvider } from '@/lib/ai';
+import { askForJson, activeProvider } from './ai';
 
 /**
  * The morning briefing: the day's fleet numbers rewritten as the three or four

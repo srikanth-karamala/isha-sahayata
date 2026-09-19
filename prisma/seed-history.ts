@@ -124,6 +124,10 @@ async function main() {
   const hubNames = hubs.map((h) => h.name);
 
   console.log('Clearing rides, logs and cycles (hubs preserved)...');
+  // Order matters: every one of these references the row below it.
+  // Lost & found reports point at users, so they go before the users do.
+  await prisma.matchSuggestion.deleteMany();
+  await prisma.lostFoundItem.deleteMany();
   await prisma.ridePathPoint.deleteMany();
   await prisma.ride.deleteMany();
   await prisma.auditLog.deleteMany();
@@ -185,26 +189,39 @@ async function main() {
     for (let hour = 0; hour < 24; hour++) {
       if (dayOffset === 0 && hour > now.getHours()) break;
 
-      // Overnight redistribution: staff return cycles from the outlying
-      // accommodation hubs to the main hubs before dawn.
+      // Overnight redistribution: before dawn, staff even the fleet out so no
+      // station starts the day empty.
+      //
+      // An earlier version only moved cycles away from hubs that were *over*
+      // capacity. Since no hub ever exceeded its capacity, nothing moved, and
+      // hubs the evening flow drained — Main Gate, Biksha Hall — stayed at
+      // zero for the whole simulated history. Real staff top up empty stands,
+      // so this pulls toward a share of the fleet proportional to capacity.
       if (hour === 3) {
-        for (const hub of hubs) {
-          const parked = cycles.filter((c) => cycleLocation.get(c.id) === hub.id);
-          const overflow = parked.length - hub.capacity;
-          if (overflow <= 0) continue;
-          for (const c of parked.slice(0, overflow)) {
-            const room = hubs.map((h) =>
-              h.id === hub.id
-                ? 0
-                : Math.max(
-                    0,
-                    h.capacity -
-                      cycles.filter((x) => cycleLocation.get(x.id) === h.id).length
-                  )
-            );
-            if (room.every((r) => r === 0)) break;
-            cycleLocation.set(c.id, hubs[weightedPick(room)].id);
-          }
+        const countAt = (hubId: string) =>
+          cycles.filter((c) => cycleLocation.get(c.id) === hubId).length;
+
+        const totalCapacity = hubs.reduce((sum, h) => sum + h.capacity, 0);
+        // Leave a little slack so the result is not suspiciously uniform.
+        const target = (h: (typeof hubs)[number]) =>
+          Math.round((h.capacity / totalCapacity) * cycles.length * 0.9);
+
+        // Move from the most over-supplied hub to the most under-supplied,
+        // one cycle at a time, until the gap closes.
+        for (let pass = 0; pass < cycles.length; pass++) {
+          const ranked = hubs
+            .map((h) => ({ hub: h, surplus: countAt(h.id) - target(h) }))
+            .sort((a, b) => b.surplus - a.surplus);
+
+          const donor = ranked[0];
+          const receiver = ranked[ranked.length - 1];
+          if (donor.surplus < 1 || receiver.surplus > -1) break;
+
+          const moving = cycles.find(
+            (c) => cycleLocation.get(c.id) === donor.hub.id
+          );
+          if (!moving) break;
+          cycleLocation.set(moving.id, receiver.hub.id);
         }
       }
 
