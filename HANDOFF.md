@@ -113,6 +113,16 @@ coloured text.
 map for a short list, but unusable for a form — satellite imagery showed through
 the text boxes. Forms and the nav bar use `.yc-sheet-solid`.
 
+**The seed rebalances toward a share of the fleet, not away from overflow.**
+An earlier version of `prisma/seed-history.ts` only moved cycles out of hubs
+that were *over* capacity. No hub ever exceeded its capacity, so nothing ever
+moved, and the hubs the evening flow drains — Main Gate, Biksha Hall — sat at 0
+and 1 cycles across the whole simulated history. On the map that reads as
+broken data rather than as the imbalance it is. Redistribution now pulls each
+hub toward a share proportional to its capacity, which is what staff actually
+do. Keep some variation: a perfectly even fleet leaves the briefing with
+nothing to say.
+
 **Photos live in Postgres, not on disk.** `lib/uploads.ts` writes an `Upload`
 row and returns `/api/uploads/<id>`; the route serves the bytes back. The
 original version wrote into `public/uploads`, which works locally and fails on
@@ -149,6 +159,16 @@ Mercator zoom-floor calculation was written against the wrong theory first —
 **Consecutive conditional siblings are a list to React.** Three
 `{tab === 'x' && panel}` lines in one wrapper make React ask for keys. Resolve
 to a single node through a lookup.
+
+**`lib/*.ts` must import each other relatively, not through `@/`.** The Prisma
+seed imports `fallbackTriage` from `lib/triage.ts` and runs under ts-node,
+which does not resolve the `@/` alias. An `@/lib/ai` import there breaks
+`pnpm db:history` with a module-not-found error that points at the seed rather
+than the real cause.
+
+**`pnpm db:history` deletes users, so lost-and-found rows must go first.**
+Those rows carry a foreign key to `User`. The delete order in the seed matters,
+and the failure message names the constraint rather than the ordering.
 
 **SQLite stored `DateTime` as epoch milliseconds** in the older Hackathon copy of
 this project, so raw-SQL date grouping needs `/1000` first. Not an issue on
@@ -197,6 +217,20 @@ the local connection string somewhere to switch back.
 
 ---
 
+## Things that look like bugs but are not
+
+**"First scan asks for your name and phone" is often invisible.** The hint under
+the scan button only renders when there is no saved rider identity. Identity
+lives in `localStorage` under `yc_rider_identity`, so once you have scanned once
+on a browser it correctly disappears. To see it again, clear that key or open a
+private window.
+
+**Main Gate shows few cycles.** It has the largest capacity (40) and the seed
+distributes proportionally, then the day's rides drain it. That is the
+imbalance the morning briefing exists to flag, and it does.
+
+---
+
 ## Still open
 
 - **Lost & Found claiming is trust-based.** Confirming a reunion closes both
@@ -217,19 +251,35 @@ the local connection string somewhere to switch back.
 
 ## Running it
 
+See `RUNNING.md`. The short version, verified on this machine:
+
 ```bash
-pnpm install
-pnpm exec prisma migrate deploy
-pnpm exec prisma db seed   # hubs (runs prisma/seed.ts)
-pnpm db:history            # fleet + 21 days of rides
-pnpm dev --port 3001
+cd "<project>"
+docker start yellow-cycle-postgres
+pnpm start -p 3001 -H 0.0.0.0
 ```
 
-- Rider app: http://localhost:3001
-- Staff console: http://localhost:3001/admin (passcode in `.env`)
+**Postgres runs in Docker**, not as a system service — container
+`yellow-cycle-postgres`, host port 5434, data in the volume
+`yellow_cycle_pg`. Without it running the app starts but returns 500 on every
+page, which reads as a broken app rather than a missing database. Its restart
+policy was `no` and is now `unless-stopped`, so it survives a reboot.
 
-`.env` holds `DATABASE_URL`, `ADMIN_PASSCODE` and the model key. It is
-gitignored, is not tracked, and has never been committed — verified.
+`.env` holds `DATABASE_URL`, `ADMIN_PASSCODE` and `GROQ_API_KEY`. It is
+gitignored, is not tracked, and has never been committed — verified. The server
+reads it at startup, so a key added while it is running has no effect until a
+restart.
 
 **No git remote is configured.** Everything is local. If you push, make the
 repository private while `ADMIN_PASSCODE` is anything real.
+
+---
+
+## The other documents
+
+| File | What it is for |
+| --- | --- |
+| `README.md` | What the product does and the rider/staff flows. Predates this session; still accurate on the cycles side. |
+| `RUNNING.md` | How to start the app day to day, and what to do when it will not start. Every command in it was run before being written down. |
+| `DEPLOY.md` | Getting it onto a public URL: Neon, GitHub, Vercel. Not started yet. |
+| `HANDOFF.md` | This file — why things are the way they are, and what is still open. |
