@@ -3,7 +3,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 
 /** Persist a camera data-URL under public/uploads and return the public path. */
-export async function saveUploadDataUrl(dataUrl: string, folder: 'faults' | 'repairs') {
+export async function saveUploadDataUrl(dataUrl: string, folder: 'faults' | 'repairs' | 'lost-found') {
   const match = /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i.exec(dataUrl);
   if (!match) throw new Error('Please upload a photo from the camera or gallery.');
 

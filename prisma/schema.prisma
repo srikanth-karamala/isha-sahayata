@@ -34,6 +34,31 @@ enum FaultSeverity {
   LOW
 }
 
+enum LostFoundKind {
+  LOST
+  FOUND
+}
+
+enum LostFoundStatus {
+  OPEN
+  CLAIMED
+  /// Kept out of matching but not deleted, so the record survives.
+  ARCHIVED
+}
+
+enum ItemCategory {
+  CLOTHING
+  BOTTLE
+  BAG
+  ELECTRONICS
+  DOCUMENTS
+  EYEWEAR
+  JEWELLERY
+  KEYS
+  BOOK
+  OTHER
+}
+
 enum AuditAction {
   CHECKOUT
   DROP_OFF
@@ -48,6 +73,7 @@ model User {
   createdAt  DateTime @default(now())
   heldCycles Cycle[]
   rides      Ride[]
+  lostFound  LostFoundItem[]
 }
 
 model Cycle {
@@ -123,6 +149,7 @@ model Hub {
   cycles    Cycle[]
   startLogs AuditLog[] @relation("StartHub")
   endLogs   AuditLog[] @relation("EndHub")
+  lostFound LostFoundItem[]
 }
 
 model AuditLog {
@@ -142,4 +169,66 @@ model AuditLog {
   createdAt      DateTime    @default(now())
 
   @@index([action, createdAt])
+}
+
+
+/// A lost or found report. One model for both directions: the only difference
+/// is `kind`, which keeps matching symmetrical — a LOST report is matched
+/// against FOUND entries and vice versa.
+model LostFoundItem {
+  id          String          @id @default(uuid())
+  kind        LostFoundKind
+  status      LostFoundStatus @default(OPEN)
+
+  /// What the person actually typed. Matching reads this, not the category.
+  description String
+  /// AI-assigned; falls back to keyword rules when Claude is unavailable.
+  category    ItemCategory?
+  /// Short staff-facing label derived from the description.
+  title       String?
+  photoUrl    String?
+
+  /// Where it was lost or found. Hub is optional — plenty of things go missing
+  /// between stations.
+  hubId       String?
+  hub         Hub?            @relation(fields: [hubId], references: [id])
+  placeNote   String?
+  latitude    Float?
+  longitude   Float?
+
+  /// When it was lost or found, as reported — not when the row was created.
+  occurredAt  DateTime
+  reportedById String
+  reportedBy  User            @relation(fields: [reportedById], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  matchesAsSource MatchSuggestion[] @relation("SourceItem")
+  matchesAsTarget MatchSuggestion[] @relation("TargetItem")
+
+  @@index([kind, status, occurredAt])
+}
+
+/// A possible pairing between a LOST and a FOUND report, scored by Claude.
+/// Stored rather than computed per request so staff see a stable list and the
+/// same pair is not re-scored on every page load.
+model MatchSuggestion {
+  id         String        @id @default(uuid())
+  sourceId   String
+  source     LostFoundItem @relation("SourceItem", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId   String
+  target     LostFoundItem @relation("TargetItem", fields: [targetId], references: [id], onDelete: Cascade)
+
+  /// 0-100. Above 60 is surfaced to the person who reported the loss.
+  score      Int
+  /// One sentence on why these two look like the same object.
+  reasoning  String
+  /// True when Claude scored it, false when the keyword fallback did.
+  byAi       Boolean       @default(false)
+  dismissed  Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+
+  @@unique([sourceId, targetId])
+  @@index([sourceId, score])
 }

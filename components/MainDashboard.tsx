@@ -8,6 +8,7 @@ import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
 import BottomNav, { type RiderTab } from './BottomNav';
 import ReportFaultPanel from './ReportFaultPanel';
+import LostFoundPanel from './LostFoundPanel';
 import IdentityGate from './IdentityGate';
 import DynamicIsland from './DynamicIsland';
 import useRideTracker from '@/hooks/useRideTracker';
@@ -396,14 +397,12 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 onNeedIdentity={() => setNeedsIdentity(true)}
               />
             ) : tab === 'lost-found' ? (
-              <div className="yc-sheet yc-sheet-solid p-5 text-center">
-                <p className="yc-eyebrow">Coming next</p>
-                <h3 className="yc-title yc-title-md mt-1">Lost &amp; Found</h3>
-                <p className="yc-body-sm mt-1.5">
-                  Report something you lost on campus, or hand in something you
-                  found.
-                </p>
-              </div>
+              <LostFoundPanel
+                userId={rider?.id ?? null}
+                hubs={hubs}
+                userPos={userPos}
+                onNeedIdentity={() => setNeedsIdentity(true)}
+              />
             ) : (
               <>
                 <div className="yc-sheet">
