@@ -1380,3 +1380,94 @@ body {
 }
 .yc-staff .s-chip-warn::before { background: transparent; box-shadow: inset 0 0 0 2px currentColor; }
 .yc-staff .s-chip-neutral::before { width: 4px; height: 4px; opacity: .6; }
+
+/* ===============================================================
+   Launch screen
+   Shown once per session while the first data load settles. Uses
+   --serif for the wordmark so it inherits the real Fedra Serif if
+   those files are ever added.
+   =============================================================== */
+
+.yc-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  background:
+    radial-gradient(ellipse 95% 50% at 50% 38%, rgba(245, 183, 0, 0.22) 0%, transparent 62%),
+    var(--paper);
+  opacity: 1;
+  transition: opacity 0.42s var(--spring);
+}
+
+.yc-splash.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.yc-splash-mark {
+  width: 84px;
+  height: 84px;
+  border-radius: 1.6rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(28, 25, 23, 0.08),
+    0 18px 40px rgba(28, 25, 23, 0.16);
+  margin-bottom: 1.35rem;
+  animation: yc-splash-rise 0.62s var(--spring) both;
+}
+
+.yc-splash-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.yc-splash-eyebrow {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--secondary-label);
+  animation: yc-splash-rise 0.62s var(--spring) 0.08s both;
+}
+
+.yc-splash-name {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  margin: 0.3rem 0 0;
+  animation: yc-splash-rise 0.62s var(--spring) 0.14s both;
+}
+
+.yc-splash-tag {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 0.4rem;
+  animation: yc-splash-rise 0.62s var(--spring) 0.2s both;
+}
+
+@keyframes yc-splash-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-splash,
+  .yc-splash-mark,
+  .yc-splash-eyebrow,
+  .yc-splash-name,
+  .yc-splash-tag {
+    animation: none;
+    transition: none;
+  }
+}

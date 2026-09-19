@@ -94,7 +94,7 @@ export default function DynamicIsland({
           ? 'Near a dock — tap for drop-off, swipe down for sheet'
           : mode === 'riding'
             ? 'Active ride — tap for details, swipe down for sheet'
-            : 'Yellow Cycle status — tap for tip, swipe down for docks'
+            : 'Isha Sahayata status — tap for tip, swipe down for docks'
       }
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

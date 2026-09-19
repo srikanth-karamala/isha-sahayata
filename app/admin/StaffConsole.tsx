@@ -69,9 +69,20 @@ export default function StaffConsole({
     <div className="yc-staff min-h-dvh">
       <div className="mx-auto w-full max-w-[1400px] px-4 md:px-7 py-6 md:py-8">
         <header className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <p className="s-eyebrow">Isha Yoga Center</p>
-            <h1 className="s-h1 mt-1">Staff console</h1>
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/isha-logo.png"
+              alt=""
+              width={44}
+              height={44}
+              className="rounded-[0.85rem] shrink-0"
+              style={{ boxShadow: '0 1px 3px rgba(20,24,31,.12)' }}
+            />
+            <div>
+              <p className="s-eyebrow">Isha Sahayata</p>
+              <h1 className="s-h1 mt-0.5">Staff console</h1>
+            </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/" className="s-btn s-btn-quiet">

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Yellow Cycle · Isha Yoga Center',
+  title: 'Isha Sahayata · Isha Yoga Center',
   description: 'Shared yellow cycles across the Isha Yoga Center campus',
 };
 

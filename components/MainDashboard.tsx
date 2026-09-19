@@ -9,6 +9,7 @@ import ActionModal from './ActionModal';
 import BottomNav, { type RiderTab } from './BottomNav';
 import ReportFaultPanel from './ReportFaultPanel';
 import LostFoundPanel from './LostFoundPanel';
+import SplashScreen from './SplashScreen';
 import IdentityGate from './IdentityGate';
 import DynamicIsland from './DynamicIsland';
 import useRideTracker from '@/hooks/useRideTracker';
@@ -51,6 +52,9 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   // The map earns its place on the Cycles tab and during a ride; elsewhere it
   // is decoration behind a full-height panel.
   const showMap = tab === 'cycles' || Boolean(activeRide);
+
+  // Shown once per mount while the map and hub data settle.
+  const [splashDone, setSplashDone] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
   const sheetDragY = useRef(0);
   const tracker = useRideTracker();
@@ -238,6 +242,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   return (
     <PhoneShell>
       <div className="yc-app">
+        {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
         {/* Report and Lost & Found have nothing to do with location, so the
             map is not rendered behind them: it adds no information, its
             controls sit over content they do not act on, and it keeps a WebGL
@@ -284,13 +289,13 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             <div className="yc-glass yc-glass-header flex items-center gap-3 px-3.5 py-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/isha-logo.jpeg"
+                src="/isha-logo.png"
                 alt="Isha Foundation"
                 className="h-10 w-10 rounded-[0.85rem] object-cover shrink-0 ring-1 ring-white/50"
               />
               <div className="min-w-0 flex-1 pr-1">
                 <p className="yc-eyebrow">Isha Yoga Center</p>
-                <h1 className="yc-display text-[19px] truncate mt-0.5">Yellow Cycle</h1>
+                <h1 className="yc-display text-[19px] truncate mt-0.5">Isha Sahayata</h1>
               </div>
               <div className="text-right shrink-0 pl-2.5 border-l border-[var(--separator)] max-w-[7.5rem]">
                 <p className="yc-title yc-title-sm tabular-nums leading-none">{headerReady}</p>
