@@ -47,6 +47,10 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   // When the report panel asks for a scan, the scanned code lands here.
   const [scanTarget, setScanTarget] = useState<'unlock' | 'report'>('unlock');
   const [reportQr, setReportQr] = useState<string | null>(null);
+
+  // The map earns its place on the Cycles tab and during a ride; elsewhere it
+  // is decoration behind a full-height panel.
+  const showMap = tab === 'cycles' || Boolean(activeRide);
   const slideRef = useRef<HTMLDivElement>(null);
   const sheetDragY = useRef(0);
   const tracker = useRideTracker();
@@ -234,20 +238,29 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   return (
     <PhoneShell>
       <div className="yc-app">
-        <div className="yc-app-map">
-          <MapView
-            hubs={hubs}
-            selectedHubId={selectedHubId}
-            followRider={Boolean(activeRide)}
-            currentPos={tracker.currentPos}
-            ridePath={tracker.ridePath}
-            onSelectHub={(id) => {
-              setSelectedHubId(id);
-              setSheetExpanded(true);
-            }}
-            onUserLocated={setUserPos}
-          />
-        </div>
+        {/* Report and Lost & Found have nothing to do with location, so the
+            map is not rendered behind them: it adds no information, its
+            controls sit over content they do not act on, and it keeps a WebGL
+            canvas running behind an opaque panel. An active ride always shows
+            the map, whichever tab is selected. */}
+        {showMap ? (
+          <div className="yc-app-map">
+            <MapView
+              hubs={hubs}
+              selectedHubId={selectedHubId}
+              followRider={Boolean(activeRide)}
+              currentPos={tracker.currentPos}
+              ridePath={tracker.ridePath}
+              onSelectHub={(id) => {
+                setSelectedHubId(id);
+                setSheetExpanded(true);
+              }}
+              onUserLocated={setUserPos}
+            />
+          </div>
+        ) : (
+          <div className="yc-app-plain" aria-hidden />
+        )}
 
         <DynamicIsland
           mode={islandMode}
@@ -289,7 +302,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 )}
               </div>
             </div>
-            {!userPos && !tracker.currentPos && !activeRide && (
+            {showMap && !userPos && !tracker.currentPos && !activeRide && (
               <button
                 type="button"
                 onClick={() => {
@@ -308,9 +321,13 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             )}
           </header>
 
-          <div className="yc-app-spacer" />
+          {showMap && <div className="yc-app-spacer" />}
 
-          <div className={`yc-bottom-stack ${sheetExpanded ? 'is-expanded' : 'is-peek'}`}>
+          <div
+            className={`yc-bottom-stack ${sheetExpanded ? 'is-expanded' : 'is-peek'}${
+              showMap ? '' : ' is-full'
+            }`}
+          >
             {activeRide ? (
               <div className="yc-sheet p-4" ref={slideRef}>
                 <div

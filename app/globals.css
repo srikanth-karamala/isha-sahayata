@@ -352,6 +352,33 @@ body {
   z-index: 0;
 }
 
+/* Stands in for the map on tabs that do not use it: the app's own warm
+   ground, so the panel above still reads as a sheet on a surface. */
+.yc-app-plain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -5%, rgba(245, 183, 0, 0.16) 0%, transparent 55%),
+    var(--paper);
+}
+
+/* A full-height panel gets the whole screen rather than being pinned to the
+   bottom: these tabs are forms and lists, not something laid over a map. */
+.yc-bottom-stack.is-full {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: 0.5rem;
+}
+
+.yc-bottom-stack.is-full > .yc-sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
 .yc-app-ui {
   position: relative;
   z-index: 20;

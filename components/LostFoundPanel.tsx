@@ -313,7 +313,7 @@ export default function LostFoundPanel({
   const openReports = myReports.filter((r) => r.status === 'OPEN');
 
   return (
-    <div className="yc-sheet yc-sheet-solid p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+    <div className="yc-sheet yc-sheet-solid p-5 space-y-4">
       <div>
         <h3 className="yc-title yc-title-md">Lost &amp; Found</h3>
         <p className="yc-body-sm mt-0.5">
