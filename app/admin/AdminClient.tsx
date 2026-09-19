@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { repairCycle, getActiveRides } from '@/app/actions';
-import { adminLogout } from './auth-actions';
-import { Wrench, CheckCircle2, MapPin, AlertTriangle, ArrowLeft, LogOut, Camera, ShieldAlert, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { CheckCircle2, MapPin, AlertTriangle, Camera, ShieldAlert, Sparkles } from 'lucide-react';
 import type { CycleStatus, HubSummary, LiveRide } from '@/lib/types';
 import type { FaultCategory, FaultSeverity } from '@prisma/client';
 import { formatDistance } from '@/lib/geo';
@@ -121,38 +119,6 @@ export default function AdminClient({
 
   return (
     <div className="space-y-5">
-      <div className="yc-panel flex justify-between items-center px-4 py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-[1.05rem] bg-primary flex items-center justify-center shadow-sm ring-1 ring-white/40">
-            <Wrench className="w-5 h-5 text-[var(--ink)]" />
-          </div>
-          <div>
-            <h2 className="yc-title yc-title-md">Maintenance</h2>
-            <p className="yc-meta mt-0.5">
-              {cycles.length} cycle{cycles.length === 1 ? '' : 's'} with staff
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/"
-            className="flex items-center gap-1 px-3 py-2 rounded-full bg-black/[0.05] text-[var(--ink-2)] text-xs font-semibold"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Rider map</span>
-          </Link>
-          <form action={adminLogout}>
-            <button
-              type="submit"
-              className="flex items-center gap-1 px-3 py-2 rounded-full bg-black/[0.05] text-[var(--ink-2)] text-xs font-semibold"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Log out</span>
-            </button>
-          </form>
-        </div>
-      </div>
-
       {/* Live map takes the width it needs; the single stat sits beside it
           rather than spanning a full row on its own. */}
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_260px] gap-4 items-start">

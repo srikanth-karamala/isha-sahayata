@@ -80,7 +80,16 @@ export default function LostFoundPanel({
   }, [userId]);
 
   useEffect(() => {
-    void refresh();
+    // Deferred so the state update lands after the render pass rather than
+    // synchronously inside the effect body.
+    let cancelled = false;
+    const id = setTimeout(() => {
+      if (!cancelled) void refresh();
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(id);
+    };
   }, [refresh]);
 
   const reset = () => {

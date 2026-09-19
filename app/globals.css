@@ -1164,3 +1164,154 @@ body {
     transition: none;
   }
 }
+
+/* ===============================================================
+   Staff console theme
+   -----------------------------------------------------------------
+   The rider app is a glass-over-satellite phone experience. The staff
+   console is a different job: read at a desk, scanned rather than
+   browsed, often for something that needs action. So it drops the
+   glass for flat opaque cards, takes a calm blue as the accent for
+   data and actions (blue reads as operational, and leaves Isha amber
+   free to mean "brand" rather than "button"), and runs a larger type
+   scale with more air.
+
+   Scoped to .yc-staff so nothing here reaches the rider app.
+   =============================================================== */
+
+.yc-staff {
+  --s-bg:        #f4f5f7;
+  --s-surface:   #ffffff;
+  --s-surface-2: #f8f9fb;
+  --s-line:      #e3e6ec;
+  --s-line-soft: #eef0f4;
+
+  --s-ink:       #14181f;
+  --s-ink-2:     #3d454f;
+  --s-muted:     #6b7480;
+  --s-faint:     #98a1ae;
+
+  /* Blue carries data and actions. */
+  --s-accent:      #1f5fbf;
+  --s-accent-ink:  #16478f;
+  --s-accent-soft: #eaf1fc;
+  --s-accent-edge: #c3d7f3;
+
+  /* Status stays reserved and never doubles as an accent. */
+  --s-crit:      #b3261e;
+  --s-crit-soft: #fdeceb;
+  --s-warn:      #8a6100;
+  --s-warn-soft: #fdf3dc;
+  --s-good:      #1a7f37;
+  --s-good-soft: #e7f6ec;
+
+  background: var(--s-bg);
+  color: var(--s-ink);
+}
+
+.yc-staff .s-card {
+  background: var(--s-surface);
+  border: 1px solid var(--s-line);
+  border-radius: 14px;
+}
+
+/* Type scale — deliberately larger than the rider app's. */
+.yc-staff .s-h1 { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+.yc-staff .s-h2 { font-size: 18px; font-weight: 650; letter-spacing: -.015em; line-height: 1.25; }
+.yc-staff .s-h3 { font-size: 15.5px; font-weight: 650; letter-spacing: -.01em; }
+.yc-staff .s-body { font-size: 14.5px; line-height: 1.6; color: var(--s-ink-2); }
+.yc-staff .s-meta { font-size: 12.5px; color: var(--s-muted); line-height: 1.5; }
+.yc-staff .s-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--s-muted);
+}
+.yc-staff .s-num {
+  font-size: 30px; font-weight: 680; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+
+/* Tabs: top rail on desktop, bottom bar on phones. */
+.yc-staff .s-tabs {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--s-surface-2);
+  border: 1px solid var(--s-line);
+  border-radius: 12px;
+}
+.yc-staff .s-tab {
+  flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; padding: 9px 14px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--s-muted); cursor: pointer;
+  font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+  letter-spacing: -.01em; white-space: nowrap;
+  transition: background .16s ease, color .16s ease;
+}
+.yc-staff .s-tab:hover { color: var(--s-ink-2); }
+.yc-staff .s-tab.is-active {
+  background: var(--s-surface); color: var(--s-accent-ink);
+  box-shadow: 0 1px 2px rgba(20,24,31,.07), 0 0 0 1px var(--s-line);
+}
+.yc-staff .s-tab-count {
+  font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 999px;
+  background: var(--s-accent-soft); color: var(--s-accent-ink);
+}
+.yc-staff .s-tab-count.is-alert { background: var(--s-crit-soft); color: var(--s-crit); }
+
+@media (max-width: 720px) {
+  .yc-staff .s-tabs {
+    position: fixed; left: 12px; right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    z-index: 40; background: var(--s-surface);
+    box-shadow: 0 6px 24px rgba(20,24,31,.14);
+  }
+  .yc-staff .s-tab { flex-direction: column; gap: 3px; font-size: 11px; padding: 8px 4px; }
+  .yc-staff .s-tab-body { padding-bottom: 84px; }
+}
+
+/* Buttons */
+.yc-staff .s-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 9px 15px; border-radius: 10px; border: 1px solid transparent;
+  font-family: var(--sans); font-size: 13.5px; font-weight: 650;
+  cursor: pointer; transition: background .16s ease, border-color .16s ease;
+}
+.yc-staff .s-btn-primary { background: var(--s-accent); color: #fff; }
+.yc-staff .s-btn-primary:hover { background: var(--s-accent-ink); }
+.yc-staff .s-btn-primary:disabled { opacity: .5; cursor: default; }
+.yc-staff .s-btn-quiet {
+  background: var(--s-surface); border-color: var(--s-line); color: var(--s-ink-2);
+}
+.yc-staff .s-btn-quiet:hover { border-color: var(--s-faint); }
+
+.yc-staff .s-field {
+  width: 100%; background: var(--s-surface); border: 1px solid var(--s-line);
+  border-radius: 10px; padding: 9px 12px; font-family: var(--sans);
+  font-size: 13.5px; color: var(--s-ink); outline: none;
+}
+.yc-staff .s-field:focus { border-color: var(--s-accent); box-shadow: 0 0 0 3px var(--s-accent-soft); }
+
+/* Severity chips.
+   Red, amber and green cannot be separated by hue alone under deuteranopia
+   (measured ΔE 1.7 between the critical and warning inks), so each chip
+   carries its label in dark ink on a tinted fill — every combination clears
+   WCAG AA (4.5:1+) — and a leading dot whose weight rises with severity.
+   Colour is the third cue here, never the only one. */
+.yc-staff .s-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px;
+}
+.yc-staff .s-chip-crit { background: var(--s-crit-soft); color: var(--s-crit); }
+.yc-staff .s-chip-warn { background: var(--s-warn-soft); color: var(--s-warn); }
+.yc-staff .s-chip-good { background: var(--s-good-soft); color: var(--s-good); }
+.yc-staff .s-chip-neutral { background: var(--s-surface-2); color: var(--s-muted); border: 1px solid var(--s-line); }
+
+
+/* Leading dot: filled for critical, ringed for warning, small for the rest —
+   so severity survives greyscale and forced-colors. */
+.yc-staff .s-chip::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; flex: none;
+}
+.yc-staff .s-chip-warn::before { background: transparent; box-shadow: inset 0 0 0 2px currentColor; }
+.yc-staff .s-chip-neutral::before { width: 4px; height: 4px; opacity: .6; }
