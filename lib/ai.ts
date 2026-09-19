@@ -43,12 +43,16 @@ export interface AiResult<T> {
 }
 
 /**
- * Groq model choices. Both support json_schema structured outputs; the vision
- * model is used only when an image is attached, since it is slower and the
- * text model is a better default for the other calls.
+ * Groq model choices, both verified against a live account: they support
+ * json_schema structured outputs, and qwen accepts image input, which is what
+ * keeps photo-aware fault triage working. The vision model is used only when
+ * an image is attached; the text model is the better default otherwise.
+ *
+ * Groq rejects images smaller than 32px on a side, so a very small photo falls
+ * through to the text model rather than failing the call.
  */
 const GROQ_TEXT_MODEL = 'openai/gpt-oss-120b';
-const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const GROQ_VISION_MODEL = 'qwen/qwen3.8-27b';
 
 const ANTHROPIC_MODEL = 'claude-opus-5';
 

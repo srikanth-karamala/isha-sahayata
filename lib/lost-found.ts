@@ -71,6 +71,10 @@ What matters, in order:
 - Timing. A thing cannot be found before it was lost; a found report days earlier than the loss is almost certainly a different object.
 - Place. Nearby locations support a match, but campus items travel, so distance alone should not rule a pairing out.
 
+Two people describing the same object rarely use the same words, and you must see past that. "Flask", "bottle", "tumbler" and "sipper" are the same kind of object. "Black", "dark" and "charcoal" are the same colour. "Dented", "scratched" and "banged up" are all a damaged surface, and one person will notice damage the other did not mention. Different wording for a compatible object is NOT evidence against a match — judge whether the two descriptions could be the same physical thing, not whether they read alike.
+
+Treat a detail as contradicting only when both reports state something incompatible: red versus blue, leather versus steel, a child's size versus an adult's. Silence in one report is not a contradiction.
+
 Scoring:
 - 85-100: distinctive details align and nothing contradicts. Confident.
 - 60-84: same kind of object and compatible details, but generic or partly unverified.
