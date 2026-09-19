@@ -266,7 +266,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
         />
 
         <div className="yc-app-ui">
-          <header className="pt-[4.75rem] px-3 pb-1">
+          <header className="px-3 pb-1" style={{ paddingTop: 'var(--header-top)' }}>
             <div className="yc-glass yc-glass-header flex items-center gap-3 px-3.5 py-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
