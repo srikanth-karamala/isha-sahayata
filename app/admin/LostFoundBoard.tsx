@@ -7,10 +7,20 @@ import { confirmMatch, getLostFoundSummary } from '@/app/lost-found-actions';
 /**
  * Lost and found, staff view.
  *
- * The useful thing for staff is not the list of reports — it is the list of
- * *pairings*: which lost report and which handed-in item look like the same
- * object, ranked by confidence, so a volunteer at the desk can reunite them
- * without reading every entry.
+ * The page answers two questions in order, and nothing else:
+ *
+ *   1. What can I close right now?  — the suggested pairings.
+ *   2. What is still unmatched?     — everything the matcher found no partner
+ *                                     for, which is where a human has to look.
+ *
+ * It used to list every open report underneath the pairings as well, which
+ * meant two thirds of the page was a second copy of what was already above:
+ * of nine open reports, six were already shown inside a pairing. Repeating
+ * them made the page look busier than the work actually is, and buried the
+ * three items that genuinely needed attention among six that did not.
+ *
+ * So the lists below now exclude anything already paired above. If an item
+ * appears twice on this page, that is a bug.
  */
 
 type Summary = Awaited<ReturnType<typeof getLostFoundSummary>>;
@@ -51,6 +61,16 @@ export default function LostFoundBoard({
   const [done, setDone] = useState<string[]>([]);
 
   const matches = summary.topMatches.filter((m) => !done.includes(m.id));
+
+  // Every report already visible inside a pairing above. Confirming a pairing
+  // removes it from `matches`, so its two items reappear in the lists below
+  // until the page refetches and drops them as claimed — which is correct:
+  // for that moment they really are unhandled again.
+  const paired = new Set(matches.flatMap((m) => [m.sourceId, m.targetId]));
+
+  const unmatchedLost = openLostItems.filter((i) => !paired.has(i.id));
+  const unmatchedFound = openFoundItems.filter((i) => !paired.has(i.id));
+  const waiting = unmatchedLost.length + unmatchedFound.length;
 
   return (
     <div className="space-y-5">
@@ -191,49 +211,28 @@ export default function LostFoundBoard({
         )}
       </section>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <section className="s-card p-5">
-          <h2 className="s-h2 flex items-center gap-2">
-            <PackageSearch className="w-4 h-4" style={{ color: 'var(--s-muted)' }} />
-            Reported lost
-          </h2>
-          <p className="s-meta mt-0.5 mb-3">{openLostItems.length} open</p>
-          {openLostItems.length === 0 ? (
-            <p className="s-body">Nothing reported lost.</p>
-          ) : (
-            <ul className="space-y-0">
-              {openLostItems.map((item) => (
-                <li
-                  key={item.id}
-                  className="py-2.5"
-                  style={{ borderTop: '1px solid var(--s-line-soft)' }}
-                >
-                  <p className="s-h3">{item.title ?? item.description}</p>
-                  <p className="s-meta mt-0.5">
-                    {item.reportedBy.name} · {placeOf(item)} ·{' '}
-                    {whenLabel(item.occurredAt)}
-                  </p>
-                  <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
-                    <Phone className="w-3 h-3 shrink-0" />
-                    {item.reportedBy.phone}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+      {/* Everything the matcher could not pair. This is the queue a human has
+          to work through, so it is framed as one thing with two columns
+          rather than two independent lists of "all reports". */}
+      <section className="s-card p-5">
+        <h2 className="s-h2">Still unmatched</h2>
+        <p className="s-meta mt-0.5 mb-4">
+          {waiting === 0
+            ? 'Nothing is waiting — every open report has a suggested pairing above.'
+            : `${waiting} report${waiting === 1 ? '' : 's'} with no likely pairing yet. These need a person to look.`}
+        </p>
 
-        <section className="s-card p-5">
-          <h2 className="s-h2 flex items-center gap-2">
-            <HandHeart className="w-4 h-4" style={{ color: 'var(--s-muted)' }} />
-            Handed in
-          </h2>
-          <p className="s-meta mt-0.5 mb-3">{openFoundItems.length} waiting to be claimed</p>
-          {openFoundItems.length === 0 ? (
-            <p className="s-body">Nothing handed in.</p>
+        <div className="grid lg:grid-cols-2 gap-x-6 gap-y-4">
+        <div>
+          <h3 className="s-eyebrow flex items-center gap-1.5 mb-2">
+            <PackageSearch className="w-3 h-3" />
+            Lost · {unmatchedLost.length}
+          </h3>
+          {unmatchedLost.length === 0 ? (
+            <p className="s-meta">Nothing unmatched.</p>
           ) : (
             <ul className="space-y-0">
-              {openFoundItems.map((item) => (
+              {unmatchedLost.map((item) => (
                 <li
                   key={item.id}
                   className="py-2.5"
@@ -252,8 +251,39 @@ export default function LostFoundBoard({
               ))}
             </ul>
           )}
-        </section>
-      </div>
+        </div>
+
+        <div>
+          <h3 className="s-eyebrow flex items-center gap-1.5 mb-2">
+            <HandHeart className="w-3 h-3" />
+            Handed in · {unmatchedFound.length}
+          </h3>
+          {unmatchedFound.length === 0 ? (
+            <p className="s-meta">Nothing unmatched.</p>
+          ) : (
+            <ul className="space-y-0">
+              {unmatchedFound.map((item) => (
+                <li
+                  key={item.id}
+                  className="py-2.5"
+                  style={{ borderTop: '1px solid var(--s-line-soft)' }}
+                >
+                  <p className="s-h3">{item.title ?? item.description}</p>
+                  <p className="s-meta mt-0.5">
+                    {item.reportedBy.name} · {placeOf(item)} ·{' '}
+                    {whenLabel(item.occurredAt)}
+                  </p>
+                  <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
+                    <Phone className="w-3 h-3 shrink-0" />
+                    {item.reportedBy.phone}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -214,7 +214,11 @@ export async function getOpenItemsForStaff(kind: LostFoundKind, limit = 30) {
   return prisma.lostFoundItem.findMany({
     where: { kind, status: LostFoundStatus.OPEN },
     include: { hub: true, reportedBy: true },
-    orderBy: { occurredAt: 'desc' },
+    // Newest submission first, by when it was filed rather than when the
+    // object was lost: a shawl lost at 01:00 and reported at 09:00 would
+    // otherwise outrank something reported since, and staff watching this
+    // page want the report that just arrived at the top.
+    orderBy: { createdAt: 'desc' },
     take: limit,
   });
 }
