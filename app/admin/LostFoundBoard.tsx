@@ -74,32 +74,22 @@ export default function LostFoundBoard({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-3 gap-3 s-statrow">
-        <div className="s-card p-4">
-          <p className="s-eyebrow">Open · lost</p>
-          <p className="s-num mt-2">{summary.openLost}</p>
-        </div>
-        <div className="s-card p-4">
-          <p className="s-eyebrow">Open · handed in</p>
-          <p className="s-num mt-2">{summary.openFound}</p>
-        </div>
-        <div className="s-card p-4">
-          <p className="s-eyebrow">Reunited</p>
-          <p className="s-num mt-2" style={{ color: 'var(--s-good)' }}>
-            {summary.claimed}
-          </p>
-        </div>
-      </div>
-
       {/* The AI's actual job on this page: proposing pairings. */}
       <section className="s-card p-5">
         <div className="flex items-start gap-2 mb-1">
           <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--s-accent)' }} />
           <div>
-            <h2 className="s-h2">Suggested reunions</h2>
+            <h2 className="s-h2">
+              Suggested reunions
+              {matches.length > 0 && (
+                <span className="s-count">{matches.length}</span>
+              )}
+            </h2>
             <p className="s-meta mt-0.5">
               Every open report is read and scored for which lost and handed-in
               descriptions look like the same object. Confirming closes both.
+              {summary.claimed > 0 &&
+                ` ${summary.claimed} reunited so far.`}
             </p>
           </div>
         </div>
@@ -215,7 +205,10 @@ export default function LostFoundBoard({
           to work through, so it is framed as one thing with two columns
           rather than two independent lists of "all reports". */}
       <section className="s-card p-5">
-        <h2 className="s-h2">Still unmatched</h2>
+        <h2 className="s-h2">
+          Still unmatched
+          {waiting > 0 && <span className="s-count">{waiting}</span>}
+        </h2>
         <p className="s-meta mt-0.5 mb-4">
           {waiting === 0
             ? 'Nothing is waiting — every open report has a suggested pairing above.'

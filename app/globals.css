@@ -1796,11 +1796,22 @@ body {
   color: var(--muted);
 }
 
-/* Stat row: three numbers that orient rather than inform in depth, so they
-   are a compact band rather than three tall cards pushing the pairings — the
-   reason staff opened the page — below the fold. */
-.yc-staff .s-statrow .s-card { padding: 14px 16px; }
-.yc-staff .s-statrow .s-num { font-size: 24px; margin-top: 2px; }
+/* Counts ride in the heading of the thing they count, rather than in a row of
+   cards above it. The row restated what the sections below already showed —
+   "open · lost 3" over a list of three lost reports — and cost the pairings,
+   the reason staff open this page, a screen of height to say it. */
+.yc-staff .s-count {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--s-accent-soft);
+  color: var(--s-accent-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
 
 /* The rider app is a fixed phone frame: it manages its own internal scrolling
    and the page itself must never move. This replaces the global body lock that
