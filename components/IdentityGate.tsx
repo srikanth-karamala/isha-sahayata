@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { User, ArrowRight, X } from 'lucide-react';
 import { getOrCreateUser } from '@/app/actions';
 import { saveRiderIdentity } from '@/lib/rider-identity';
+import SwipeDismiss from './SwipeDismiss';
 
 interface IdentityGateProps {
   onIdentified: (identity: { id: string; name: string; phone: string }) => void;
@@ -33,20 +34,25 @@ export default function IdentityGate({ onIdentified, onClose }: IdentityGateProp
   };
 
   return (
-    <div className="yc-overlay">
-      <form onSubmit={handleSubmit} className="yc-overlay-card">
-        <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
+    <SwipeDismiss onDismiss={() => onClose?.()}>
+      <form onSubmit={handleSubmit}>
+        <div className="px-5 pt-2 pb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
-              <User className="w-5 h-5 text-stone-900" />
+            <div className="w-11 h-11 rounded-[1.1rem] bg-primary flex items-center justify-center shadow-sm ring-1 ring-white/40">
+              <User className="w-5 h-5 text-[var(--ink)]" />
             </div>
             <div>
               <p className="yc-eyebrow">Quick introduction</p>
-              <h3 className="yc-title yc-title-md mt-1">Who is riding?</h3>
+              <h3 className="yc-display text-[22px] mt-1">Who is riding?</h3>
             </div>
           </div>
           {onClose && (
-            <button type="button" onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-full bg-black/[0.04] text-[var(--muted)]"
+              aria-label="Close"
+            >
               <X className="w-5 h-5" />
             </button>
           )}
@@ -65,7 +71,7 @@ export default function IdentityGate({ onIdentified, onClose }: IdentityGateProp
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Arun Kumar"
               autoFocus
-              className="w-full bg-stone-50 border border-stone-200 text-stone-900 text-sm rounded-2xl p-3 outline-none focus:border-stone-400"
+              className="yc-field"
             />
           </div>
 
@@ -76,7 +82,7 @@ export default function IdentityGate({ onIdentified, onClose }: IdentityGateProp
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g. 9876543210"
-              className="w-full bg-stone-50 border border-stone-200 text-stone-900 text-sm rounded-2xl p-3 outline-none focus:border-stone-400"
+              className="yc-field"
             />
           </div>
 
@@ -87,15 +93,18 @@ export default function IdentityGate({ onIdentified, onClose }: IdentityGateProp
             disabled={loading || !name.trim() || !phone.trim()}
             className="yc-btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {loading ? 'Continuing…' : (
+            {loading ? (
+              'Continuing…'
+            ) : (
               <>
                 <span>Continue</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
+          <p className="yc-meta text-center">Swipe down or from the left edge to cancel</p>
         </div>
       </form>
-    </div>
+    </SwipeDismiss>
   );
 }

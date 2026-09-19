@@ -13,7 +13,7 @@ import { formatDistance } from '@/lib/geo';
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => (
-    <div className="h-72 bg-[#ece7dc] rounded-2xl flex items-center justify-center text-stone-400 text-xs font-semibold">
+    <div className="h-72 bg-[#3a5238] rounded-[1.25rem] flex items-center justify-center text-white/70 text-xs font-semibold tracking-tight">
       Loading live map
     </div>
   ),
@@ -106,13 +106,15 @@ export default function AdminClient({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-stone-900 text-white p-4 rounded-2xl">
-        <div className="flex items-center space-x-3">
-          <Wrench className="w-6 h-6 text-primary" />
+    <div className="space-y-5">
+      <div className="yc-panel flex justify-between items-center px-4 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-[1.05rem] bg-primary flex items-center justify-center shadow-sm ring-1 ring-white/40">
+            <Wrench className="w-5 h-5 text-[var(--ink)]" />
+          </div>
           <div>
-            <h2 className="font-semibold text-lg">Maintenance</h2>
-            <p className="text-xs text-stone-400">
+            <h2 className="yc-title yc-title-md">Maintenance</h2>
+            <p className="yc-meta mt-0.5">
               {cycles.length} cycle{cycles.length === 1 ? '' : 's'} with staff
             </p>
           </div>
@@ -120,7 +122,7 @@ export default function AdminClient({
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="flex items-center space-x-1 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-xs font-semibold transition"
+            className="flex items-center gap-1 px-3 py-2 rounded-full bg-black/[0.05] text-[var(--ink-2)] text-xs font-semibold"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Rider map</span>
@@ -128,7 +130,7 @@ export default function AdminClient({
           <form action={adminLogout}>
             <button
               type="submit"
-              className="flex items-center space-x-1 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg text-xs font-semibold transition"
+              className="flex items-center gap-1 px-3 py-2 rounded-full bg-black/[0.05] text-[var(--ink-2)] text-xs font-semibold"
             >
               <LogOut className="w-4 h-4" />
               <span>Log out</span>
@@ -138,20 +140,20 @@ export default function AdminClient({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-2xl border border-stone-200 p-4">
-          <p className="text-[11px] uppercase tracking-wide text-stone-500">Rides today</p>
-          <p className="text-2xl font-semibold mt-1">{stats.ridesToday}</p>
+        <div className="yc-panel p-4">
+          <p className="yc-eyebrow">Rides today</p>
+          <p className="yc-title text-[28px] mt-1 tabular-nums">{stats.ridesToday}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-stone-200 p-4">
-          <p className="text-[11px] uppercase tracking-wide text-stone-500">Km covered</p>
-          <p className="text-2xl font-semibold mt-1">{stats.kmCoveredToday.toFixed(1)}</p>
+        <div className="yc-panel p-4">
+          <p className="yc-eyebrow">Km covered</p>
+          <p className="yc-title text-[28px] mt-1 tabular-nums">{stats.kmCoveredToday.toFixed(1)}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-          <p className="text-sm font-semibold">Live rides</p>
-          <p className="text-xs text-stone-500">{liveRides.length} active</p>
+      <div className="yc-panel overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--separator)] flex items-center justify-between">
+          <p className="yc-title yc-title-sm">Live rides</p>
+          <p className="yc-meta">{liveRides.length} active</p>
         </div>
         <div className="h-72 relative">
           <MapView
@@ -165,17 +167,17 @@ export default function AdminClient({
           />
         </div>
         {liveRides.length > 0 && (
-          <div className="divide-y divide-stone-100 max-h-40 overflow-y-auto">
+          <div className="divide-y divide-[var(--separator)] max-h-40 overflow-y-auto">
             {liveRides.map((ride) => (
               <div key={ride.id} className="px-4 py-2.5 flex justify-between gap-3 text-xs">
                 <div className="min-w-0">
-                  <p className="font-mono font-semibold">{ride.qrCode}</p>
-                  <p className="text-stone-500 truncate">
+                  <p className="yc-mono yc-strong">{ride.qrCode}</p>
+                  <p className="yc-meta truncate mt-0.5">
                     {ride.riderName}
                     {ride.riderPhone ? ` · ${ride.riderPhone}` : ''}
                   </p>
                 </div>
-                <p className="text-stone-500 shrink-0">{formatDistance(ride.distanceMeters)}</p>
+                <p className="yc-meta shrink-0">{formatDistance(ride.distanceMeters)}</p>
               </div>
             ))}
           </div>
@@ -183,62 +185,62 @@ export default function AdminClient({
       </div>
 
       {message && (
-        <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs flex items-center space-x-2 border border-emerald-200">
+        <div className="p-3 bg-emerald-50/90 text-emerald-800 rounded-[1.1rem] text-xs flex items-center gap-2 border border-emerald-200/80 backdrop-blur-sm">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{message}</span>
         </div>
       )}
 
       {cycles.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center border border-stone-200">
+        <div className="yc-panel p-8 text-center">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-          <h3 className="font-semibold text-stone-800">All cycles operational</h3>
-          <p className="text-xs text-stone-500 mt-1">Nothing is currently flagged for maintenance.</p>
+          <h3 className="yc-title yc-title-md">All cycles operational</h3>
+          <p className="yc-body-sm mt-1">Nothing is currently flagged for maintenance.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {cycles.map((cycle) => (
-            <div key={cycle.id} className="bg-white rounded-2xl p-5 border border-stone-200 flex flex-col justify-between">
+            <div key={cycle.id} className="yc-panel p-5 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-mono font-semibold text-sm bg-rose-100 text-rose-900 px-3 py-1 rounded-full">
+                  <span className="yc-mono yc-strong text-sm bg-rose-100 text-rose-900 px-3 py-1 rounded-full">
                     {cycle.qrCode}
                   </span>
-                  <span className="text-[10px] text-stone-400">
+                  <span className="yc-meta">
                     Updated: {new Date(cycle.updatedAt).toLocaleTimeString()}
                   </span>
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <div className="bg-rose-50 border border-rose-100 p-3 rounded-xl">
-                    <p className="text-xs font-semibold text-rose-900 mb-1 flex items-center space-x-1">
+                  <div className="bg-rose-50/90 border border-rose-100 p-3 rounded-[1.05rem]">
+                    <p className="text-xs font-semibold text-rose-900 mb-1 flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5" />
                       <span>Reported fault</span>
                     </p>
-                    <p className="text-xs text-stone-700">{cycle.issueNotes || 'No notes provided'}</p>
+                    <p className="yc-body-sm text-[var(--ink-2)]">{cycle.issueNotes || 'No notes provided'}</p>
                     {cycle.issuePhotoUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={cycle.issuePhotoUrl}
                         alt={`Fault on ${cycle.qrCode}`}
-                        className="mt-2 w-full max-h-36 object-cover rounded-lg border border-rose-100"
+                        className="mt-2 w-full max-h-36 object-cover rounded-xl border border-rose-100"
                       />
                     )}
                   </div>
 
-                  <div className="text-xs text-stone-500 flex items-center space-x-1">
-                    <MapPin className="w-3.5 h-3.5 text-stone-400" />
+                  <div className="yc-meta flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
                     <span>Last hub: {cycle.currentHub.name}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-stone-100 pt-3 space-y-2">
-                <label className="block text-[11px] font-medium text-stone-600">Deploy to station</label>
+              <div className="border-t border-[var(--separator)] pt-3 space-y-2">
+                <label className="block yc-meta">Deploy to station</label>
                 <select
                   value={selectedHubs[cycle.qrCode] || hubs[0]?.id}
                   onChange={(e) => setSelectedHubs({ ...selectedHubs, [cycle.qrCode]: e.target.value })}
-                  className="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs"
+                  className="yc-field py-2 text-xs"
                 >
                   {hubs.map((h) => (
                     <option key={h.id} value={h.id}>
@@ -247,7 +249,7 @@ export default function AdminClient({
                   ))}
                 </select>
 
-                <label className="block text-[11px] font-medium text-stone-600 flex items-center gap-1">
+                <label className="yc-meta flex items-center gap-1">
                   <Camera className="w-3.5 h-3.5" />
                   Repair photo required
                 </label>
@@ -262,21 +264,21 @@ export default function AdminClient({
                       setRepairPhotos((prev) => ({ ...prev, [cycle.qrCode]: dataUrl }));
                     });
                   }}
-                  className="block w-full text-xs text-stone-600"
+                  className="block w-full text-xs text-[var(--muted)]"
                 />
                 {repairPhotos[cycle.qrCode] && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={repairPhotos[cycle.qrCode]}
                     alt="Repair proof"
-                    className="w-full max-h-28 object-cover rounded-lg border border-stone-200"
+                    className="w-full max-h-28 object-cover rounded-xl border border-[var(--separator)]"
                   />
                 )}
 
                 <button
                   onClick={() => handleRepair(cycle.qrCode)}
                   disabled={loading === cycle.qrCode || !repairPhotos[cycle.qrCode]}
-                  className="w-full px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-lg disabled:opacity-50"
+                  className="w-full px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-[1rem] disabled:opacity-50 transition-transform active:scale-[0.98]"
                 >
                   {loading === cycle.qrCode ? 'Updating…' : 'Confirm repaired'}
                 </button>

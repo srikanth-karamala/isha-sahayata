@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { X, Camera, QrCode, Keyboard, ArrowRight, CameraOff } from 'lucide-react';
+import SwipeDismiss from './SwipeDismiss';
 
 interface QRScannerProps {
   onScanSuccess: (qrCode: string) => void;
@@ -114,19 +115,24 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   };
 
   return (
-    <div className="yc-overlay">
-      <div className="yc-overlay-card">
-        <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
+    <SwipeDismiss onDismiss={onClose}>
+      <div>
+        <div className="px-5 pt-2 pb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
-              <QrCode className="w-5 h-5 text-stone-900" />
+            <div className="w-11 h-11 rounded-[1.1rem] bg-primary flex items-center justify-center shadow-sm ring-1 ring-white/40">
+              <QrCode className="w-5 h-5 text-[var(--ink)]" />
             </div>
             <div>
               <p className="yc-eyebrow">Frame sticker</p>
-              <h3 className="yc-title yc-title-md mt-1">Scan to continue</h3>
+              <h3 className="yc-display text-[20px] mt-1">Scan to continue</h3>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full bg-black/[0.04] text-[var(--muted)]"
+            aria-label="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -160,7 +166,7 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
           </div>
 
           <div>
-            <div className="flex items-center gap-2 text-stone-700 text-xs font-semibold mb-3">
+            <div className="flex items-center gap-2 text-[var(--ink-2)] text-xs font-semibold mb-3">
               <Keyboard className="w-4 h-4" />
               <span>Or type the code</span>
             </div>
@@ -173,20 +179,21 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
                   setError('');
                 }}
                 placeholder="e.g. ISHA-CYC-101"
-                className="w-full bg-stone-50 border border-stone-200 focus:border-stone-400 text-stone-900 font-mono text-sm uppercase rounded-2xl p-3 outline-none placeholder:text-stone-400"
+                className="yc-field font-mono uppercase placeholder:normal-case"
               />
               {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
               <button
                 type="submit"
-                className="w-full py-3.5 bg-primary text-stone-900 font-semibold text-sm rounded-2xl flex items-center justify-center gap-2"
+                className="yc-btn-primary flex items-center justify-center gap-2"
               >
                 <span>Use this code</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
+            <p className="yc-meta text-center mt-3">Swipe down or from the left edge to close</p>
           </div>
         </div>
       </div>
-    </div>
+    </SwipeDismiss>
   );
 }

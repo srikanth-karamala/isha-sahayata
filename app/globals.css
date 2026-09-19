@@ -1,22 +1,24 @@
 @import "tailwindcss";
 
 /* =============================================================
-   Yellow Cycle — Isha design language
-   Fonts + hierarchy aligned with IE volunteering / sadhguru.org:
-   Fedra Sans (book/medium) · Fedra Serif · Mukta / Trirong fallbacks
-   Product accent stays yellow-cycle gold.
+   Yellow Cycle — hybrid iOS 26 Liquid Glass
+   System UI chrome + warm Isha undertones; yellow as brand accent.
+   Glass floats on the navigation layer; map stays solid content.
    ============================================================= */
 
 :root {
-  --ink: #2e2a26;
-  --ink-2: #4a443e;
-  --muted: #6d6358;
-  --faint: #938877;
+  --ink: #1c1917;
+  --ink-2: #3f3a34;
+  --muted: #6b645c;
+  --faint: #8a8278;
+  --label: #1c1917;
+  --secondary-label: rgba(28, 25, 23, 0.58);
 
-  --paper: #f1ebdf;
-  --surface: #fffdf9;
-  --surface-2: #f6f1e7;
-  --line: #e3daca;
+  --paper: #f3efe6;
+  --surface: rgba(255, 252, 246, 0.92);
+  --surface-2: #ebe4d6;
+  --line: rgba(28, 25, 23, 0.1);
+  --separator: rgba(28, 25, 23, 0.12);
 
   --primary: #f5b700;
   --primary-dark: #ca8a04;
@@ -27,12 +29,33 @@
   --background: var(--paper);
   --foreground: var(--ink);
 
-  --serif: "FedraSerifAStdBook", "Trirong", Georgia, serif;
-  --sans: "FedraSansStd-book", "Mukta", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --sans-med: "FedraSansStd-medium", "Mukta", sans-serif;
+  /* UI: SF / system. Brand titles may still use Fedra serif. */
+  --serif: "FedraSerifAStdBook", "Trirong", ui-serif, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", "Mukta", system-ui, sans-serif;
+  --sans-med: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", "Mukta", system-ui, sans-serif;
+
+  --radius-lg: 1.5rem;
+  --radius-xl: 1.75rem;
+  --radius-pill: 9999px;
+
+  --glass-fill: linear-gradient(
+    155deg,
+    rgba(255, 253, 248, 0.78) 0%,
+    rgba(255, 248, 235, 0.55) 48%,
+    rgba(255, 252, 246, 0.7) 100%
+  );
+  --glass-border: rgba(255, 255, 255, 0.62);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -0.5px 0 rgba(28, 25, 23, 0.06),
+    0 10px 36px rgba(28, 25, 23, 0.14);
+  --glass-blur: blur(28px) saturate(185%);
 
   --phone-w: 390px;
   --phone-h: 844px;
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -49,11 +72,12 @@
 
 html,
 body {
-  background: #1a1714;
+  background: #141210;
   color: var(--ink);
   font-family: var(--sans);
-  font-size: 14.5px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: -0.011em;
   min-height: 100%;
   margin: 0;
   overscroll-behavior: none;
@@ -62,7 +86,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Keep in @layer base so Tailwind color utilities (e.g. text-white) can override. */
 @layer base {
   button,
   input,
@@ -72,13 +95,67 @@ body {
   }
 }
 
-/* —— Typography scale (Isha hierarchy) —— */
+/* —— Liquid Glass primitives —— */
+.yc-glass {
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.yc-glass-header {
+  border-radius: var(--radius-xl);
+}
+
+.yc-glass-sheet {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.yc-glass-fab {
+  border-radius: var(--radius-pill);
+  transition: transform 0.28s var(--spring), box-shadow 0.28s var(--spring);
+}
+
+.yc-glass-fab:active {
+  transform: scale(0.96);
+}
+
+.yc-field {
+  width: 100%;
+  background: rgba(255, 252, 246, 0.72);
+  border: 1px solid var(--separator);
+  color: var(--ink);
+  font-size: 15px;
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  outline: none;
+  transition: border-color 0.2s var(--spring), box-shadow 0.2s var(--spring);
+}
+
+.yc-field:focus {
+  border-color: rgba(245, 183, 0, 0.55);
+  box-shadow: 0 0 0 3px rgba(245, 183, 0, 0.18);
+}
+
+.yc-panel {
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* —— Typography —— */
 .yc-eyebrow {
   font-family: var(--sans);
-  font-size: 10.5px;
-  font-weight: 400;
+  font-size: 11px;
+  font-weight: 590;
   text-transform: uppercase;
-  letter-spacing: 0.19em;
+  letter-spacing: 0.08em;
   color: var(--faint);
   line-height: 1.2;
   margin: 0;
@@ -86,8 +163,8 @@ body {
 
 .yc-title {
   font-family: var(--sans-med);
-  font-weight: 600;
-  letter-spacing: -0.018em;
+  font-weight: 650;
+  letter-spacing: -0.022em;
   line-height: 1.15;
   color: var(--ink);
   margin: 0;
@@ -108,48 +185,48 @@ body {
 .yc-display {
   font-family: var(--serif);
   font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
   color: var(--ink);
   margin: 0;
 }
 
 .yc-body {
   font-family: var(--sans);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--ink-2);
   margin: 0;
 }
 
 .yc-body-sm {
   font-family: var(--sans);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 400;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--muted);
   margin: 0;
 }
 
 .yc-meta {
   font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 400;
-  line-height: 1.4;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
   color: var(--faint);
   margin: 0;
 }
 
 .yc-strong {
   font-family: var(--sans-med);
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .yc-mono {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-family: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 /* —— iPhone prototype stage —— */
@@ -160,8 +237,8 @@ body {
   place-items: center;
   padding: 1.25rem;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 20%, #3a3228 0%, transparent 55%),
-    linear-gradient(165deg, #2a241c 0%, #14110e 55%, #0c0a08 100%);
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(245, 183, 0, 0.12) 0%, transparent 55%),
+    linear-gradient(165deg, #2a2620 0%, #161310 50%, #0c0b09 100%);
 }
 
 .yc-phone {
@@ -169,13 +246,13 @@ body {
   width: min(100%, var(--phone-w));
   height: min(100dvh - 2.5rem, var(--phone-h));
   max-height: 100dvh;
-  border-radius: 3rem;
+  border-radius: 3.15rem;
   background: #0a0a0a;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 0 0 11px #1c1917,
-    0 0 0 12px #44403c,
-    0 28px 80px rgba(0, 0, 0, 0.55);
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 0 11px #1a1816,
+    0 0 0 12.5px #4a4540,
+    0 32px 90px rgba(0, 0, 0, 0.55);
   overflow: hidden;
 }
 
@@ -187,9 +264,7 @@ body {
   z-index: 60;
   height: 2.75rem;
   pointer-events: none;
-  display: flex;
-  justify-content: center;
-  padding-top: 0.7rem;
+  display: none; /* Interactive Dynamic Island lives in-app */
 }
 
 .yc-phone-island {
@@ -208,7 +283,7 @@ body {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--paper);
+  background: #3a5238;
   isolation: isolate;
 }
 
@@ -220,7 +295,7 @@ body {
   width: 8rem;
   height: 0.28rem;
   border-radius: 9999px;
-  background: rgba(46, 42, 38, 0.35);
+  background: rgba(255, 255, 255, 0.35);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -292,34 +367,36 @@ body {
 
 .yc-map-controls {
   position: absolute;
-  /* Further below island + near-you header so controls stay fully visible */
-  top: calc(2.75rem + 7.5rem + 2rem);
+  top: calc(4.75rem + 5.5rem);
   right: 0.85rem;
   z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.7rem;
+  gap: 0.65rem;
 }
 
 .yc-map-ctrl {
   box-sizing: border-box;
   -webkit-appearance: none;
   appearance: none;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.85rem;
+  height: 2.85rem;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 0.85rem;
-  background: rgba(255, 253, 249, 0.96);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: var(--ink);
-  box-shadow: 0 4px 14px rgba(46, 42, 38, 0.1);
+  box-shadow: var(--glass-shadow);
   position: relative;
   display: grid;
   place-items: center;
   line-height: 0;
   overflow: hidden;
+  transition: transform 0.22s var(--spring);
 }
 
 .yc-map-ctrl > svg {
@@ -334,15 +411,15 @@ body {
 
 .yc-map-ctrl-3d {
   width: auto;
-  min-width: 2.75rem;
-  padding: 0 0.65rem;
+  min-width: 2.85rem;
+  padding: 0 0.7rem;
   gap: 0.28rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: var(--sans-med);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0.04em;
   line-height: 1;
   overflow: visible;
@@ -356,26 +433,28 @@ body {
 }
 
 .yc-map-ctrl-3d.is-active {
-  background: var(--ink);
+  background: rgba(28, 25, 23, 0.88);
   color: #fffdf9;
-  border-color: var(--ink);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .yc-map-ctrl:active {
-  transform: scale(0.96);
+  transform: scale(0.94);
 }
 
 .yc-map-zoom {
   box-sizing: border-box;
-  width: 2.75rem;
+  width: 2.85rem;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   overflow: hidden;
-  border-radius: 0.85rem;
-  border: 1px solid var(--line);
-  background: rgba(255, 253, 249, 0.96);
-  box-shadow: 0 4px 14px rgba(46, 42, 38, 0.1);
+  border-radius: 1rem;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
 }
 
 .yc-map-zoom .yc-map-ctrl-zoom {
@@ -388,15 +467,16 @@ body {
   border-radius: 0;
   box-shadow: none;
   background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   display: grid;
   place-items: center;
 }
 
 .yc-map-zoom .yc-map-ctrl-zoom + .yc-map-ctrl-zoom {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--separator);
 }
 
-/* Geometric + / − so stroke icons cannot sit off-center */
 .yc-zoom-glyph {
   position: relative;
   width: 14px;
@@ -429,11 +509,200 @@ body {
 
 .yc-sheet {
   margin: 0 0.75rem;
-  background: rgba(255, 253, 249, 0.96);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  background: var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
+  transition: max-height 0.35s var(--spring);
+}
+
+.yc-sheet-handle {
+  width: 2.25rem;
+  height: 0.28rem;
+  border-radius: 9999px;
+  background: rgba(28, 25, 23, 0.22);
+  margin: 0.55rem auto 0.35rem;
+}
+
+.yc-sheet-handle-hit {
+  width: 100%;
+  height: auto;
+  min-height: 1.35rem;
+  margin: 0;
+  padding: 0.55rem 0 0.15rem;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.yc-sheet-handle-hit::before {
+  content: '';
+  width: 2.25rem;
+  height: 0.28rem;
+  border-radius: 9999px;
+  background: rgba(28, 25, 23, 0.22);
+}
+
+/* —— Dynamic Island —— */
+.yc-island {
+  position: absolute;
+  top: max(0.65rem, env(safe-area-inset-top, 0px));
+  left: 50%;
+  translate: -50% 0;
+  z-index: 50;
+  min-width: 7.5rem;
+  max-width: calc(100% - 1.5rem);
+  border-radius: 9999px;
+  background: #0a0a0a;
+  color: #f5f1ea;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transition:
+    width 0.38s var(--spring),
+    border-radius 0.38s var(--spring),
+    background 0.28s var(--spring),
+    box-shadow 0.28s var(--spring);
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+}
+
+.yc-island.is-expanded {
+  width: min(20.5rem, calc(100% - 1.5rem));
+  border-radius: 1.55rem;
+}
+
+.yc-island.is-live {
+  background: #111110;
+}
+
+.yc-island.is-alert {
+  background: linear-gradient(180deg, #2a2208 0%, #14110a 100%);
+  box-shadow:
+    0 0 0 1px rgba(245, 183, 0, 0.35),
+    0 10px 28px rgba(202, 138, 4, 0.28);
+  animation: yc-island-pulse 1.8s var(--spring) infinite;
+}
+
+.yc-island-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.05rem;
+  padding: 0.4rem 0.9rem;
+}
+
+.yc-island-compact-label {
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.yc-island-compact-meta {
+  font-size: 11px;
+  font-weight: 560;
+  color: rgba(245, 241, 234, 0.62);
+  font-variant-numeric: tabular-nums;
+}
+
+.yc-island-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 3px rgba(245, 183, 0, 0.22);
+}
+
+.yc-island-pulse {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: #34c759;
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.25);
+}
+
+.yc-island-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--primary);
+}
+
+.yc-island-panel {
+  padding: 0.15rem 0.95rem 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: default;
+}
+
+.yc-island-panel-title {
+  margin: 0.35rem 0 0;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.yc-island-panel-body {
+  margin: 0.35rem 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(245, 241, 234, 0.72);
+}
+
+.yc-island-panel-body strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.yc-island-cta {
+  margin-top: 0.7rem;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.4rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.yc-island-hint {
+  margin: 0.55rem 0 0;
+  font-size: 10.5px;
+  color: rgba(245, 241, 234, 0.45);
+  text-align: center;
+}
+
+@keyframes yc-island-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(245, 183, 0, 0.35),
+      0 10px 28px rgba(202, 138, 4, 0.28);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(245, 183, 0, 0.55),
+      0 12px 34px rgba(202, 138, 4, 0.42);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-island.is-alert {
+    animation: none;
+  }
 }
 
 .yc-bottom-stack {
@@ -450,25 +719,31 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(46, 42, 38, 0.42);
+  background: rgba(20, 18, 16, 0.38);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 0;
+  animation: yc-fade-in 0.28s var(--spring);
 }
 
 .yc-overlay-card {
   width: 100%;
   max-height: min(88%, 640px);
   overflow: auto;
-  background: var(--surface);
-  border-radius: 1.5rem 1.5rem 0 0;
-  border: 1px solid var(--line);
+  background: var(--glass-fill);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  border-radius: 1.75rem 1.75rem 0 0;
+  border: 1px solid var(--glass-border);
   border-bottom: none;
+  box-shadow: 0 -8px 40px rgba(28, 25, 23, 0.18);
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  animation: yc-sheet-up 0.38s var(--spring);
 }
 
 .yc-map {
   height: 100%;
   width: 100%;
-  /* Match satellite canopy so gaps never flash phone wheat / black chrome */
   background: #3a5238;
   font-family: inherit;
 }
@@ -492,20 +767,23 @@ body {
 .maplibregl-ctrl-attrib {
   font-size: 9px;
   font-family: var(--sans);
-  background: rgba(255, 253, 249, 0.78);
+  background: rgba(255, 252, 246, 0.72);
+  backdrop-filter: blur(12px);
 }
 
 .maplibregl-popup-content {
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 8px 10px;
-  box-shadow: none;
-  border: 1px solid var(--line);
+  box-shadow: var(--glass-shadow);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 252, 246, 0.92);
+  backdrop-filter: blur(16px);
   font-family: var(--sans);
 }
 
 .yc-popup-title {
   font-family: var(--sans-med);
-  font-weight: 600;
+  font-weight: 650;
   font-size: 13px;
   margin: 0 0 2px;
   color: var(--ink);
@@ -518,13 +796,12 @@ body {
   color: var(--muted);
 }
 
-/* Tip is the layout bottom so MapLibre anchor:'bottom' sits on the lat/lng. */
 .yc-pin {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  filter: drop-shadow(0 2px 4px rgba(46, 42, 38, 0.18));
+  filter: drop-shadow(0 3px 8px rgba(28, 25, 23, 0.22));
 }
 
 .yc-pin-bubble {
@@ -534,12 +811,12 @@ body {
   background: var(--primary);
   color: var(--ink);
   font-family: var(--sans-med);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid #fff;
+  border: 2.5px solid rgba(255, 255, 255, 0.92);
   line-height: 1;
 }
 
@@ -576,25 +853,26 @@ body {
   border-top-color: var(--surface-2);
 }
 
-/* Absolutely positioned so it does not push the tip off the coordinate. */
 .yc-pin-label {
   position: absolute;
   top: calc(100% + 4px);
   left: 50%;
   transform: translateX(-50%);
   max-width: 76px;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 9999px;
-  background: rgba(255, 253, 249, 0.94);
+  background: rgba(255, 252, 246, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--ink);
   font-family: var(--sans-med);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 650;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid var(--line);
+  border: 1px solid var(--glass-border);
   pointer-events: none;
 }
 
@@ -609,20 +887,24 @@ body {
 
 .yc-btn-primary {
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.15rem;
   padding: 0.85rem 1rem;
   background: var(--primary);
   color: var(--ink);
   font-family: var(--sans-med);
-  font-size: 15.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  border-radius: 1rem;
-  border: 1px solid rgba(202, 138, 4, 0.25);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 8px 24px rgba(202, 138, 4, 0.28);
+  transition: transform 0.22s var(--spring);
 }
 
 .yc-btn-primary:active {
-  transform: scale(0.99);
+  transform: scale(0.97);
 }
 
 .yc-btn-ghost {
@@ -641,42 +923,51 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 3.25rem;
-  padding: 0.85rem 1.5rem;
-  background: var(--primary);
+  min-height: 3.35rem;
+  padding: 0.9rem 1.65rem;
+  background: linear-gradient(180deg, #ffd84a 0%, var(--primary) 55%, #e5a800 100%);
   color: var(--ink);
   font-family: var(--sans-med);
-  font-size: 15.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  border-radius: 9999px;
-  border: 1px solid rgba(202, 138, 4, 0.2);
-  box-shadow: 0 8px 24px rgba(46, 42, 38, 0.12);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 12px 32px rgba(28, 25, 23, 0.18),
+    0 0 0 0.5px rgba(202, 138, 4, 0.35);
+  transition: transform 0.28s var(--spring), box-shadow 0.28s var(--spring);
 }
 
 .yc-btn-fab:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
 .yc-slide {
   position: relative;
-  height: 3.25rem;
-  border-radius: 9999px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
+  height: 3.35rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 252, 246, 0.45);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   overflow: hidden;
   touch-action: none;
   user-select: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .yc-slide.is-armed {
-  background: rgba(245, 183, 0, 0.28);
-  border-color: rgba(202, 138, 4, 0.45);
-  box-shadow: 0 0 0 1px rgba(245, 183, 0, 0.2);
+  background: rgba(245, 183, 0, 0.32);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 1px rgba(245, 183, 0, 0.25);
 }
 
 .yc-slide.is-locked {
-  opacity: 0.72;
+  opacity: 0.78;
 }
 
 .yc-slide-label {
@@ -689,10 +980,11 @@ body {
   margin: 0;
   font-family: var(--sans-med);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--ink);
   text-align: center;
   pointer-events: none;
+  letter-spacing: -0.01em;
 }
 
 .yc-slide.is-locked .yc-slide-label {
@@ -701,24 +993,59 @@ body {
 
 .yc-slide-knob {
   position: absolute;
-  top: 0.3rem;
-  left: 0.3rem;
-  width: 2.65rem;
-  height: 2.65rem;
+  top: 0.28rem;
+  left: 0.28rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 9999px;
-  background: var(--primary);
+  background: linear-gradient(180deg, #ffd84a 0%, var(--primary) 100%);
   color: var(--ink);
   display: grid;
   place-items: center;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.08em;
-  box-shadow: 0 4px 12px rgba(46, 42, 38, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 4px 14px rgba(28, 25, 23, 0.18);
   will-change: transform;
+  transition: transform 0.05s linear;
 }
 
 .yc-slide.is-locked .yc-slide-knob {
-  background: var(--surface);
+  background: rgba(255, 252, 246, 0.85);
   color: var(--faint);
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+@keyframes yc-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes yc-sheet-up {
+  from {
+    opacity: 0.6;
+    transform: translateY(18%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-overlay,
+  .yc-overlay-card,
+  .yc-btn-primary,
+  .yc-btn-fab,
+  .yc-map-ctrl,
+  .yc-glass-fab {
+    animation: none !important;
+    transition: none !important;
+  }
 }

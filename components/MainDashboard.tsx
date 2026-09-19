@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { QrCode, User } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import PhoneShell from './PhoneShell';
 import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
 import IdentityGate from './IdentityGate';
+import DynamicIsland from './DynamicIsland';
 import useRideTracker from '@/hooks/useRideTracker';
 import { loadRiderIdentity, type RiderIdentity } from '@/lib/rider-identity';
 import { clearStoredRide, loadStoredRide, saveStoredRide } from '@/lib/active-ride';
@@ -19,7 +20,7 @@ import SlideToConfirm from './SlideToConfirm';
 const MapView = dynamic(() => import('./MapView'), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 bg-[#e8dfc8] flex items-center justify-center text-stone-500 text-sm font-semibold">
+    <div className="absolute inset-0 bg-[#3a5238] flex items-center justify-center text-white/80 text-sm font-semibold tracking-tight">
       Loading campus map…
     </div>
   ),
@@ -35,6 +36,10 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
   const [activeRide, setActiveRide] = useState<CycleDetail | null>(null);
+  const [islandOpen, setIslandOpen] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(true);
+  const slideRef = useRef<HTMLDivElement>(null);
+  const sheetDragY = useRef(0);
   const tracker = useRideTracker();
   const trackerRef = useRef(tracker);
   trackerRef.current = tracker;
@@ -50,7 +55,6 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     setCheckedStorage(true);
   }, []);
 
-  // Keep dock counts live while the app is open
   useEffect(() => {
     const id = window.setInterval(() => {
       void refreshHubs();
@@ -118,10 +122,17 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   const nearestWithBike = nearbyPickup.find(({ hub }) => availableCount(hub) > 0) ?? null;
   const dropTarget = useMemo(() => nearestOpenDock(hubs, origin), [hubs, origin]);
   const nearDrop = Boolean(
-    activeRide &&
-      dropTarget &&
-      (origin ? isNearHub(dropTarget.hub, origin) : true)
-  );  const selectedHub = hubs.find((hub) => hub.id === selectedHubId) ?? null;
+    activeRide && dropTarget && (origin ? isNearHub(dropTarget.hub, origin) : true)
+  );
+
+  useEffect(() => {
+    if (nearDrop) {
+      setIslandOpen(true);
+      setSheetExpanded(true);
+    }
+  }, [nearDrop]);
+
+  const selectedHub = hubs.find((hub) => hub.id === selectedHubId) ?? null;
   const sheetRows = selectedHub
     ? [
         {
@@ -129,9 +140,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           meters: nearbyPickup.find((n) => n.hub.id === selectedHub.id)?.meters ?? Number.POSITIVE_INFINITY,
         },
       ]
-    : nearbyPickup.slice(0, 5);
+    : nearbyPickup.slice(0, sheetExpanded ? 5 : 2);
 
-  // Auto-focus the nearest dock that actually has a bike once GPS lands (once).
   const didAutoSelectRef = useRef(false);
   useEffect(() => {
     if (didAutoSelectRef.current || selectedHubId || activeRide || !nearestWithBike) return;
@@ -150,6 +160,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     : userPos
       ? 'no bikes near'
       : 'campus';
+
+  const islandMode = nearDrop ? 'near-drop' : activeRide ? 'riding' : 'idle';
 
   const confirmNearDrop = async () => {
     if (!activeRide || !rider || !dropTarget) return;
@@ -170,6 +182,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   };
 
   const openScan = () => {
+    setIslandOpen(false);
     if (rider) setShowScanner(true);
     else setNeedsIdentity(true);
   };
@@ -186,7 +199,27 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     tracker.stop();
     tracker.reset();
     setActiveQr(null);
+    setIslandOpen(false);
     await refreshHubs();
+  };
+
+  const focusDropOff = () => {
+    setSheetExpanded(true);
+    setIslandOpen(false);
+    window.requestAnimationFrame(() => {
+      slideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
+  const onSheetHandlePointerDown = (e: React.PointerEvent) => {
+    sheetDragY.current = e.clientY;
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const onSheetHandlePointerUp = (e: React.PointerEvent) => {
+    const dy = e.clientY - sheetDragY.current;
+    if (dy < -28) setSheetExpanded(true);
+    else if (dy > 28) setSheetExpanded(false);
   };
 
   return (
@@ -199,24 +232,45 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             followRider={Boolean(activeRide)}
             currentPos={tracker.currentPos}
             ridePath={tracker.ridePath}
-            onSelectHub={setSelectedHubId}
+            onSelectHub={(id) => {
+              setSelectedHubId(id);
+              setSheetExpanded(true);
+            }}
             onUserLocated={setUserPos}
           />
         </div>
 
+        <DynamicIsland
+          mode={islandMode}
+          expanded={islandOpen}
+          onToggle={() => setIslandOpen((v) => !v)}
+          onSwipeDown={() => {
+            setSheetExpanded(true);
+            setIslandOpen(false);
+          }}
+          onFocusDropOff={focusDropOff}
+          readyCount={headerReady}
+          nearbyLabel={headerMeta}
+          qrCode={activeRide?.qrCode}
+          distanceMeters={tracker.distanceMeters}
+          elapsedSeconds={tracker.elapsedSeconds}
+          dropHubName={dropTarget?.hub.name ?? null}
+        />
+
         <div className="yc-app-ui">
-          <header className="pt-11 px-3 pb-1">
-            <div className="flex items-center gap-3 bg-[rgba(255,253,249,0.96)] backdrop-blur-md rounded-2xl border border-[var(--line)] px-3.5 py-3 shadow-sm">
+          <header className="pt-[4.75rem] px-3 pb-1">
+            <div className="yc-glass yc-glass-header flex items-center gap-3 px-3.5 py-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/isha-logo.jpeg"
                 alt="Isha Foundation"
-                className="h-10 w-10 rounded-xl object-cover shrink-0"
+                className="h-10 w-10 rounded-[0.85rem] object-cover shrink-0 ring-1 ring-white/50"
               />
               <div className="min-w-0 flex-1 pr-1">
                 <p className="yc-eyebrow">Isha Yoga Center</p>
-                <h1 className="yc-title yc-title-sm truncate mt-1">Yellow Cycle</h1>
+                <h1 className="yc-display text-[19px] truncate mt-0.5">Yellow Cycle</h1>
               </div>
-              <div className="text-right shrink-0 pl-2 border-l border-[var(--line)] max-w-[7.5rem]">
+              <div className="text-right shrink-0 pl-2.5 border-l border-[var(--separator)] max-w-[7.5rem]">
                 <p className="yc-title yc-title-sm tabular-nums leading-none">{headerReady}</p>
                 <p className="yc-meta mt-1 truncate" title={headerMeta}>
                   {userPos || tracker.currentPos ? 'near you' : 'ready'}
@@ -238,7 +292,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                     { enableHighAccuracy: true, timeout: 12000 }
                   );
                 }}
-                className="mt-2 w-full text-left px-3.5 py-2.5 rounded-xl border border-[var(--line)] bg-[rgba(255,253,249,0.92)] text-[12px] text-[var(--ink-2)]"
+                className="yc-glass mt-2 w-full text-left px-3.5 py-2.5 rounded-[1.1rem] text-[12px] text-[var(--ink-2)]"
               >
                 Share location to sort docks by distance — tap here or use Locate.
               </button>
@@ -247,14 +301,21 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
 
           <div className="yc-app-spacer" />
 
-          <div className="yc-bottom-stack">
+          <div className={`yc-bottom-stack ${sheetExpanded ? 'is-expanded' : 'is-peek'}`}>
             {activeRide ? (
-              <div className="yc-sheet p-4">
+              <div className="yc-sheet p-4" ref={slideRef}>
+                <div
+                  className="yc-sheet-handle yc-sheet-handle-hit"
+                  onPointerDown={onSheetHandlePointerDown}
+                  onPointerUp={onSheetHandlePointerUp}
+                  role="separator"
+                  aria-label={sheetExpanded ? 'Swipe down to collapse' : 'Swipe up to expand'}
+                />
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="yc-eyebrow">Step 2 · Riding</p>
                     <p className="yc-mono yc-title yc-title-md truncate mt-1.5">{activeRide.qrCode}</p>
-                    {rider && (
+                    {rider && sheetExpanded && (
                       <p className="yc-body-sm mt-1.5 truncate">
                         {rider.name} · {rider.phone}
                       </p>
@@ -267,44 +328,60 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                     <p className="yc-meta mt-1">{formatDuration(tracker.elapsedSeconds)}</p>
                   </div>
                 </div>
-                <p className="yc-body mt-3.5 mb-3">
-                  {nearDrop && dropTarget
-                    ? `You are at ${dropTarget.hub.name}. Slide to leave the cycle here.`
-                    : dropTarget
-                      ? `Nearest open dock: ${dropTarget.hub.name}${
-                          Number.isFinite(dropTarget.meters) ? ` · ${formatDistance(dropTarget.meters)}` : ''
-                        }. Ride closer to slide-drop.`
-                      : 'Ride to a dock, then return the cycle so the map count updates.'}
-                </p>
-                <SlideToConfirm
-                  armed={nearDrop}
-                  armedLabel={
-                    dropTarget
-                      ? origin
-                        ? `Slide to drop off · ${dropTarget.hub.name}`
-                        : `No GPS · slide if at ${dropTarget.hub.name}`
-                      : 'Slide to drop off'
-                  }
-                  disabledLabel={
-                    dropTarget
-                      ? `Get within ~75 m of ${dropTarget.hub.name}`
-                      : 'No open dock nearby'
-                  }
-                  onConfirm={() => {
-                    void confirmNearDrop();
-                  }}
-                />
-                <button type="button" onClick={openReturn} className="yc-btn-ghost mt-2">
-                  Choose another dock
-                </button>
-                <button type="button" onClick={openScan} className="yc-btn-ghost mt-1">
-                  Scan a different code
-                </button>
+                {sheetExpanded && (
+                  <>
+                    <p className="yc-body mt-3.5 mb-3">
+                      {nearDrop && dropTarget
+                        ? `You are at ${dropTarget.hub.name}. Slide to leave the cycle here.`
+                        : dropTarget
+                          ? `Nearest open dock: ${dropTarget.hub.name}${
+                              Number.isFinite(dropTarget.meters)
+                                ? ` · ${formatDistance(dropTarget.meters)}`
+                                : ''
+                            }. Ride closer to slide-drop.`
+                          : 'Ride to a dock, then return the cycle so the map count updates.'}
+                    </p>
+                    <SlideToConfirm
+                      armed={nearDrop}
+                      armedLabel={
+                        dropTarget
+                          ? origin
+                            ? `Slide to drop off · ${dropTarget.hub.name}`
+                            : `No GPS · slide if at ${dropTarget.hub.name}`
+                          : 'Slide to drop off'
+                      }
+                      disabledLabel={
+                        dropTarget
+                          ? `Get within ~75 m of ${dropTarget.hub.name}`
+                          : 'No open dock nearby'
+                      }
+                      onConfirm={() => {
+                        void confirmNearDrop();
+                      }}
+                    />
+                    <button type="button" onClick={openReturn} className="yc-btn-ghost mt-2">
+                      Choose another dock
+                    </button>
+                    <button type="button" onClick={openScan} className="yc-btn-ghost mt-1">
+                      Scan a different code
+                    </button>
+                  </>
+                )}
+                {!sheetExpanded && (
+                  <p className="yc-meta mt-2 text-center">Swipe handle up for drop-off controls</p>
+                )}
               </div>
             ) : (
               <>
                 <div className="yc-sheet">
-                  <div className="px-4 pt-4 pb-2.5 flex items-start justify-between gap-3">
+                  <div
+                    className="yc-sheet-handle yc-sheet-handle-hit"
+                    onPointerDown={onSheetHandlePointerDown}
+                    onPointerUp={onSheetHandlePointerUp}
+                    role="separator"
+                    aria-label={sheetExpanded ? 'Swipe down to collapse' : 'Swipe up to expand'}
+                  />
+                  <div className="px-4 pt-1 pb-2.5 flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="yc-eyebrow">Step 1 · Find a dock</p>
                       <p className="yc-title yc-title-sm mt-1.5 truncate">
@@ -322,14 +399,18 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                       <button
                         type="button"
                         onClick={() => setSelectedHubId(null)}
-                        className="yc-strong text-[var(--muted)] shrink-0 min-h-11 min-w-11 px-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[13px]"
+                        className="yc-strong text-[var(--muted)] shrink-0 min-h-11 min-w-11 px-3 rounded-2xl border border-[var(--separator)] bg-white/50 text-[13px]"
                       >
                         All
                       </button>
                     )}
                   </div>
 
-                  <div className="max-h-40 overflow-y-auto overscroll-contain divide-y divide-[var(--line)]">
+                  <div
+                    className={`overflow-y-auto overscroll-contain divide-y divide-[var(--separator)] ${
+                      sheetExpanded ? 'max-h-40' : 'max-h-[4.5rem]'
+                    }`}
+                  >
                     {sheetRows.map(({ hub, meters }) => {
                       const available = availableCount(hub);
                       const faults = faultCount(hub);
@@ -338,13 +419,16 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                         <button
                           key={hub.id}
                           type="button"
-                          onClick={() => setSelectedHubId(hub.id)}
-                          className={`w-full flex items-center gap-3 px-4 py-3.5 text-left min-h-[3.5rem] ${
-                            selected ? 'bg-primary/15' : ''
+                          onClick={() => {
+                            setSelectedHubId(hub.id);
+                            setSheetExpanded(true);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3.5 text-left min-h-[3.5rem] transition-colors ${
+                            selected ? 'bg-primary/18' : 'active:bg-black/[0.03]'
                           }`}
                         >
                           <div
-                            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-[15px] yc-strong ${
+                            className={`w-11 h-11 rounded-[1.05rem] flex items-center justify-center shrink-0 text-[15px] yc-strong shadow-sm ${
                               faults > 0
                                 ? 'bg-rose-100 text-rose-800'
                                 : available === 0
@@ -430,6 +514,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               });
               setActiveQr(null);
               setSelectedHubId(null);
+              setSheetExpanded(true);
               await refreshHubs();
             }}
             onReturned={async () => {

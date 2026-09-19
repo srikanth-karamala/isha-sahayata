@@ -8,6 +8,7 @@ import type { CycleDetail, HubSummary } from '@/lib/types';
 import { occupiedCount, availableCount } from '@/lib/types';
 import { formatDistance, hubsByDistance, isNearHub } from '@/lib/geo';
 import SlideToConfirm from './SlideToConfirm';
+import SwipeDismiss from './SwipeDismiss';
 
 interface ActionModalProps {
   qrCode: string;
@@ -115,19 +116,24 @@ export default function ActionModal({
   const ridingOther = Boolean(activeRideQr && activeRideQr !== qrCode && cycle?.status === 'AVAILABLE');
 
   return (
-    <div className="yc-overlay">
-      <div className="yc-overlay-card">
-        <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-stone-100">
+    <SwipeDismiss onDismiss={onClose}>
+      <div>
+        <div className="px-5 pt-2 pb-3 flex items-start justify-between gap-3 border-b border-[var(--separator)]">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shrink-0">
-              <Bike className="w-5 h-5 text-stone-900" />
+            <div className="w-11 h-11 rounded-[1.1rem] bg-primary flex items-center justify-center shrink-0 shadow-sm ring-1 ring-white/40">
+              <Bike className="w-5 h-5 text-[var(--ink)]" />
             </div>
             <div className="min-w-0">
               <p className="yc-eyebrow">Yellow cycle</p>
               <h3 className="yc-title yc-title-md yc-mono truncate mt-1">{qrCode}</h3>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full bg-black/[0.04] text-[var(--muted)]"
+            aria-label="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -266,9 +272,9 @@ export default function ActionModal({
                       type="button"
                       disabled={full}
                       onClick={() => setSelectedHubId(hub.id)}
-                      className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-3.5 py-3 text-left min-h-[3.25rem] ${
-                        selected ? 'border-primary bg-primary/15' : 'border-stone-200 bg-white'
-                      } ${near && !full ? 'ring-2 ring-emerald-500/40' : ''} ${full ? 'opacity-40' : ''}`}
+                      className={`w-full flex items-center justify-between gap-3 rounded-[1.15rem] border px-3.5 py-3 text-left min-h-[3.25rem] transition-colors ${
+                        selected ? 'border-primary/60 bg-primary/15' : 'border-[var(--separator)] bg-white/45'
+                      } ${near && !full ? 'ring-2 ring-emerald-500/35' : ''} ${full ? 'opacity-40' : ''}`}
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
                         <MapPin className="w-4 h-4 text-stone-400 shrink-0" />
@@ -325,7 +331,7 @@ export default function ActionModal({
                 value={faultNotes}
                 onChange={(e) => setFaultNotes(e.target.value)}
                 placeholder="Flat tyre, broken pedal, chain skip…"
-                className="w-full bg-stone-50 border border-stone-200 text-stone-900 text-sm rounded-2xl p-3 outline-none min-h-[96px] focus:border-stone-400"
+                className="yc-field min-h-[96px] resize-none"
               />
               <label className="block text-sm font-semibold text-stone-800">Photo (optional, helps staff)</label>
               <input
@@ -362,6 +368,6 @@ export default function ActionModal({
           )}
         </div>
       </div>
-    </div>
+    </SwipeDismiss>
   );
 }

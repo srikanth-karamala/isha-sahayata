@@ -17,13 +17,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://static.sadhguru.org" crossOrigin="anonymous" />
-        {/* Isha design-system faces (same source as IE volunteering / sadhguru.org) */}
+        {/* Brand display face only — UI chrome uses system / SF Pro stack */}
         <link
           rel="stylesheet"
           href="https://static.sadhguru.org/assets/fonts/mukta-fonts.css?family=FedraSerifAStdBook"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Trirong:wght@400;500;600&family=Mukta:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Trirong:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>

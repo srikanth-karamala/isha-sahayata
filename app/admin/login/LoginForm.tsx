@@ -27,16 +27,13 @@ export default function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-3xl border border-stone-200 w-full max-w-sm p-7 space-y-5"
-    >
+    <form onSubmit={handleSubmit} className="yc-panel w-full max-w-sm p-7 space-y-5">
       <div className="flex flex-col items-center text-center gap-2">
-        <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center">
-          <Lock className="w-6 h-6 text-stone-900" />
+        <div className="w-12 h-12 rounded-[1.15rem] bg-primary flex items-center justify-center shadow-sm ring-1 ring-white/40">
+          <Lock className="w-6 h-6 text-[var(--ink)]" />
         </div>
-        <h1 className="text-lg font-semibold text-stone-900">Staff access</h1>
-        <p className="text-xs text-stone-500">Enter the maintenance passcode.</p>
+        <h1 className="yc-display text-[22px]">Staff access</h1>
+        <p className="yc-body-sm">Enter the maintenance passcode.</p>
       </div>
 
       <div>
@@ -46,7 +43,7 @@ export default function LoginForm() {
           onChange={(e) => setPasscode(e.target.value)}
           placeholder="Passcode"
           autoFocus
-          className="w-full bg-stone-50 border border-stone-200 text-stone-900 text-sm rounded-2xl p-3 outline-none focus:border-stone-400"
+          className="yc-field"
         />
         {error && <p className="text-xs text-rose-600 mt-2">{error}</p>}
       </div>
@@ -54,7 +51,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={isPending || !passcode}
-        className="w-full py-3 bg-primary text-stone-900 font-semibold text-sm rounded-2xl disabled:opacity-50"
+        className="yc-btn-primary disabled:opacity-50"
       >
         {isPending ? 'Checking…' : 'Enter'}
       </button>
