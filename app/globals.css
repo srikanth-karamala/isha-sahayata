@@ -706,10 +706,16 @@ body {
 }
 
 .yc-bottom-stack {
-  padding: 0 0 max(1.75rem, calc(env(safe-area-inset-bottom, 0px) + 1.1rem));
+  padding: 0 0 max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+/* The nav is the last element in the stack, so it carries the clearance for
+   the home indicator and the map attribution strip beneath it. */
+.yc-nav {
+  margin-bottom: max(0.9rem, env(safe-area-inset-bottom, 0px));
 }
 
 .yc-overlay {
@@ -765,10 +771,17 @@ body {
 }
 
 .maplibregl-ctrl-attrib {
-  font-size: 9px;
+  font-size: 8px;
   font-family: var(--sans);
-  background: rgba(255, 252, 246, 0.72);
-  backdrop-filter: blur(12px);
+  background: rgba(255, 252, 246, 0.55);
+  backdrop-filter: blur(10px);
+  /* Lift clear of the bottom nav, which now occupies the lower edge. */
+  margin-bottom: 7.25rem !important;
+  opacity: 0.75;
+}
+
+.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  transform: scale(0.85);
 }
 
 .maplibregl-popup-content {
@@ -1047,5 +1060,101 @@ body {
   .yc-glass-fab {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* A form needs a solid surface: glass over a satellite map makes inputs and
+   their labels unreadable. Used for the report and lost-and-found panels. */
+.yc-sheet-solid {
+  background: #fffcf6;
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.yc-sheet-solid .yc-field {
+  background: #fffdf8;
+  border-color: rgba(28, 25, 23, 0.16);
+}
+
+/* A flexed field must keep width:100% — with width:auto the content box
+   collapses and only the horizontal padding remains (a 32px stub). Pairing
+   the full width with a zero basis lets flex distribute the row correctly. */
+.yc-field.is-flex {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+/* yc-btn-ghost is a full-width button by default. As a compact icon button
+   beside a field it must not claim the whole row. */
+.yc-btn-ghost.is-icon {
+  width: auto;
+  flex: 0 0 auto;
+  padding-inline: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------------
+   Rider bottom navigation
+   Uses the same glass language as the header and sheets. The active
+   tab is marked by weight, ink and a dot rather than a filled pill,
+   so the bar stays quiet against the map behind it.
+   --------------------------------------------------------------- */
+
+.yc-nav {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: stretch;
+  gap: 0.25rem;
+  margin: 0 0.9rem;
+  padding: 0.4rem 0.35rem;
+  border-radius: var(--radius-xl);
+  /* Opaque, not glass: over satellite imagery a blurred bar loses all
+     contrast and the labels become unreadable. */
+  background: #fffcf6;
+  border: 1px solid rgba(28, 25, 23, 0.08);
+  box-shadow:
+    0 1px 2px rgba(28, 25, 23, 0.06),
+    0 10px 28px rgba(28, 25, 23, 0.16);
+}
+
+.yc-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.25rem 0.55rem;
+  border: 0;
+  background: transparent;
+  border-radius: 1.05rem;
+  cursor: pointer;
+  color: var(--secondary-label);
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  transition: color 0.18s var(--spring), background 0.18s var(--spring);
+}
+
+.yc-nav-item:hover {
+  color: var(--ink-2);
+}
+
+.yc-nav-item.is-active {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--primary-light);
+  box-shadow: inset 0 0 0 1px rgba(202, 138, 4, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-nav-item {
+    transition: none;
   }
 }

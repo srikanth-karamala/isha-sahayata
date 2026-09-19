@@ -6,6 +6,8 @@ import { QrCode, ShieldAlert } from 'lucide-react';
 import PhoneShell from './PhoneShell';
 import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
+import BottomNav, { type RiderTab } from './BottomNav';
+import ReportFaultPanel from './ReportFaultPanel';
 import IdentityGate from './IdentityGate';
 import DynamicIsland from './DynamicIsland';
 import useRideTracker from '@/hooks/useRideTracker';
@@ -40,6 +42,10 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   const [sheetExpanded, setSheetExpanded] = useState(true);
   // Set when a reported fault comes back unsafe — the rider must be told.
   const [faultVerdict, setFaultVerdict] = useState<string | null>(null);
+  const [tab, setTab] = useState<RiderTab>('cycles');
+  // When the report panel asks for a scan, the scanned code lands here.
+  const [scanTarget, setScanTarget] = useState<'unlock' | 'report'>('unlock');
+  const [reportQr, setReportQr] = useState<string | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
   const sheetDragY = useRef(0);
   const tracker = useRideTracker();
@@ -373,6 +379,31 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                   <p className="yc-meta mt-2 text-center">Swipe handle up for drop-off controls</p>
                 )}
               </div>
+            ) : tab === 'report' ? (
+              <ReportFaultPanel
+                userId={rider?.id ?? null}
+                userPos={userPos}
+                prefilledQr={reportQr}
+                onScanRequest={() => {
+                  setScanTarget('report');
+                  setShowScanner(true);
+                }}
+                onDone={() => {
+                  setReportQr(null);
+                  setTab('cycles');
+                  void refreshHubs();
+                }}
+                onNeedIdentity={() => setNeedsIdentity(true)}
+              />
+            ) : tab === 'lost-found' ? (
+              <div className="yc-sheet yc-sheet-solid p-5 text-center">
+                <p className="yc-eyebrow">Coming next</p>
+                <h3 className="yc-title yc-title-md mt-1">Lost &amp; Found</h3>
+                <p className="yc-body-sm mt-1.5">
+                  Report something you lost on campus, or hand in something you
+                  found.
+                </p>
+              </div>
             ) : (
               <>
                 <div className="yc-sheet">
@@ -454,7 +485,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-2 px-3">
+                <div className="flex flex-col items-center gap-1.5 px-3">
                   <button type="button" onClick={openScan} className="yc-btn-fab">
                     <QrCode className="w-5 h-5" />
                     Scan to unlock
@@ -467,6 +498,10 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </div>
               </>
             )}
+
+            {/* Nav sits below the sheet; hidden during an active ride so the
+                drop-off controls stay the only thing to act on. */}
+            {!activeRide && <BottomNav active={tab} onChange={setTab} />}
           </div>
         </div>
 
@@ -485,9 +520,18 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           <QRScanner
             onScanSuccess={(code) => {
               setShowScanner(false);
+              if (scanTarget === 'report') {
+                setReportQr(code);
+                setScanTarget('unlock');
+                setTab('report');
+                return;
+              }
               setActiveQr(code);
             }}
-            onClose={() => setShowScanner(false)}
+            onClose={() => {
+              setShowScanner(false);
+              setScanTarget('unlock');
+            }}
           />
         )}
 

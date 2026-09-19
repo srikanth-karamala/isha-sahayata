@@ -31,7 +31,7 @@ export default async function AdminPage() {
         fontFamily: 'var(--sans)',
       }}
     >
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div className="mx-auto w-full max-w-[1600px] px-4 md:px-6 py-6 space-y-5">
         <FleetInsights
           summary={summary}
           hubs={balances}

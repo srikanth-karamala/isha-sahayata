@@ -371,62 +371,70 @@ export default function FleetInsights({
 }) {
   return (
     <div className="space-y-4">
-      <div
-        className="yc-panel p-5"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(245,183,0,0.14) 0%, var(--surface) 60%)',
-        }}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-4 h-4" style={{ color: 'var(--primary-dark)' }} />
-          <h3 className="yc-title yc-title-sm">Morning briefing</h3>
-          <span
-            className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-            style={{ background: 'var(--surface-2)', color: INK.secondary }}
-          >
-            {briefing.source === 'ai' ? 'Claude' : 'Offline rules'}
-          </span>
+      {/* Row 1: briefing beside the KPI grid — the two things a coordinator
+          reads first, without scrolling past one to reach the other. */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 items-start">
+        <div
+          className="yc-panel p-5 h-full"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(245,183,0,0.14) 0%, var(--surface) 60%)',
+          }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4" style={{ color: 'var(--primary-dark)' }} />
+            <h3 className="yc-title yc-title-sm">Morning briefing</h3>
+            <span
+              className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+              style={{ background: 'var(--surface-2)', color: INK.secondary }}
+            >
+              {briefing.source === 'ai' ? 'Claude' : 'Offline rules'}
+            </span>
+          </div>
+          <p className="yc-body font-medium mb-3">{briefing.headline}</p>
+          <ul className="space-y-1.5">
+            {briefing.actions.map((action, i) => (
+              <li key={i} className="flex gap-2 yc-body-sm">
+                <span
+                  className="font-bold shrink-0"
+                  style={{ color: 'var(--primary-dark)' }}
+                >
+                  {i + 1}.
+                </span>
+                <span>{action}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-        <p className="yc-body font-medium mb-3">{briefing.headline}</p>
-        <ul className="space-y-1.5">
-          {briefing.actions.map((action, i) => (
-            <li key={i} className="flex gap-2 yc-body-sm">
-              <span
-                className="font-bold shrink-0"
-                style={{ color: 'var(--primary-dark)' }}
-              >
-                {i + 1}.
-              </span>
-              <span>{action}</span>
-            </li>
-          ))}
-        </ul>
+
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile label="Rides today" value={summary.ridesToday} Icon={Bike} />
+          <StatTile
+            label="Available now"
+            value={`${summary.available}/${summary.totalCycles}`}
+            Icon={CheckCircle2}
+          />
+          <StatTile
+            label="Avg ride"
+            value={summary.avgRideMinutes}
+            unit="min"
+            Icon={Clock}
+          />
+          <StatTile
+            label="Unsafe to ride"
+            value={summary.unsafeCycles}
+            Icon={AlertTriangle}
+            alert={summary.unsafeCycles > 0}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatTile label="Rides today" value={summary.ridesToday} Icon={Bike} />
-        <StatTile
-          label="Available now"
-          value={`${summary.available}/${summary.totalCycles}`}
-          Icon={CheckCircle2}
-        />
-        <StatTile
-          label="Avg ride"
-          value={summary.avgRideMinutes}
-          unit="min"
-          Icon={Clock}
-        />
-        <StatTile
-          label="Unsafe to ride"
-          value={summary.unsafeCycles}
-          Icon={AlertTriangle}
-          alert={summary.unsafeCycles > 0}
-        />
+      {/* Row 2: the demand curve needs width; hub availability is a short list
+          and sits beside it rather than under it. */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-4 items-start">
+        <DemandChart demand={demand} />
+        <HubBalanceChart hubs={hubs} />
       </div>
-
-      <DemandChart demand={demand} />
-      <HubBalanceChart hubs={hubs} />
 
       <p className="yc-meta flex items-center gap-1">
         <Route className="w-3 h-3" />

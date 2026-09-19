@@ -153,19 +153,15 @@ export default function AdminClient({
         </div>
       </div>
 
-      <div className="yc-panel p-4">
-        <p className="yc-eyebrow">Km covered today</p>
-        <p className="yc-title text-[28px] mt-1 tabular-nums">
-          {stats.kmCoveredToday.toFixed(1)}
-        </p>
-      </div>
-
-      <div className="yc-panel overflow-hidden">
+      {/* Live map takes the width it needs; the single stat sits beside it
+          rather than spanning a full row on its own. */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_260px] gap-4 items-start">
+        <div className="yc-panel overflow-hidden order-2 xl:order-1">
         <div className="px-4 py-3 border-b border-[var(--separator)] flex items-center justify-between">
           <p className="yc-title yc-title-sm">Live rides</p>
           <p className="yc-meta">{liveRides.length} active</p>
         </div>
-        <div className="h-72 relative">
+        <div className="h-72 xl:h-[22rem] relative">
           <MapView
             hubs={hubs}
             selectedHubId={null}
@@ -192,6 +188,17 @@ export default function AdminClient({
             ))}
           </div>
         )}
+        </div>
+
+        <div className="yc-panel p-4 order-1 xl:order-2">
+          <p className="yc-eyebrow">Km covered today</p>
+          <p className="yc-title text-[28px] mt-1 tabular-nums">
+            {stats.kmCoveredToday.toFixed(1)}
+          </p>
+          <p className="yc-meta mt-2">
+            Measured from GPS ride paths recorded today.
+          </p>
+        </div>
       </div>
 
       {message && (
@@ -208,7 +215,7 @@ export default function AdminClient({
           <p className="yc-body-sm mt-1">Nothing is currently flagged for maintenance.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {cycles.map((cycle) => (
             <div key={cycle.id} className="yc-panel p-5 flex flex-col justify-between">
               <div>
