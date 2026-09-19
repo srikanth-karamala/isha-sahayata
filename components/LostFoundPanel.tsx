@@ -21,7 +21,7 @@ import type { HubSummary } from '@/lib/types';
 
 /**
  * Lost and found for riders: report what you lost, hand in what you found,
- * and see the pairings Claude thinks describe the same object.
+ * and see the pairings the model thinks describe the same object.
  */
 
 type Mode = 'browse' | 'lost' | 'found' | 'sent';
@@ -317,7 +317,7 @@ export default function LostFoundPanel({
       <div>
         <h3 className="yc-title yc-title-md">Lost &amp; Found</h3>
         <p className="yc-body-sm mt-0.5">
-          Describe what went missing. Claude matches it against what others have
+          Describe what went missing. It is matched against what others have
           handed in.
         </p>
       </div>

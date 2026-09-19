@@ -151,13 +151,13 @@ export async function runMatching(itemId: string): Promise<number> {
         update: {
           score: match.score,
           reasoning: match.reasoning,
-          byAi: outcome.source === 'ai',
+          byAi: outcome.source !== 'fallback',
         },
         create: {
           ...pair,
           score: match.score,
           reasoning: match.reasoning,
-          byAi: outcome.source === 'ai',
+          byAi: outcome.source !== 'fallback',
         },
       });
     }

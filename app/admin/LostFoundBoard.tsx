@@ -69,7 +69,7 @@ export default function LostFoundBoard({
           <div>
             <h2 className="s-h2">Suggested reunions</h2>
             <p className="s-meta mt-0.5">
-              Claude read every open report and scored which lost and handed-in
+              Every open report is read and scored for which lost and handed-in
               descriptions look like the same object. Confirming closes both.
             </p>
           </div>
@@ -96,7 +96,7 @@ export default function LostFoundBoard({
                       {match.score}% match
                     </span>
                     <span className="s-meta">
-                      {match.byAi ? 'Scored by Claude' : 'Offline rules'}
+                      {match.byAi ? 'Scored by AI' : 'Offline rules'}
                     </span>
                   </div>
 

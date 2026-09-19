@@ -388,7 +388,11 @@ export default function FleetInsights({
               className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
               style={{ background: 'var(--surface-2)', color: INK.secondary }}
             >
-              {briefing.source === 'ai' ? 'Claude' : 'Offline rules'}
+              {briefing.source === 'anthropic'
+                ? 'Claude'
+                : briefing.source === 'groq'
+                  ? 'Groq'
+                  : 'Offline rules'}
             </span>
           </div>
           <p className="yc-body font-medium mb-3">{briefing.headline}</p>

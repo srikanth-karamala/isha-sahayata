@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { ItemCategory, LostFoundKind } from '@prisma/client';
+import { askForJson, activeProvider } from '@/lib/ai';
 
 /**
  * AI matching for lost and found reports.
@@ -26,13 +26,13 @@ export interface ScoredMatch {
 
 export interface MatchOutcome {
   matches: ScoredMatch[];
-  source: 'ai' | 'fallback';
+  source: 'anthropic' | 'groq' | 'fallback';
 }
 
 export interface ClassifiedItem {
   category: ItemCategory;
   title: string;
-  source: 'ai' | 'fallback';
+  source: 'anthropic' | 'groq' | 'fallback';
 }
 
 /**
@@ -214,43 +214,30 @@ export async function classifyItem(
   if (!text) {
     return { category: ItemCategory.OTHER, title: 'Unspecified item', source: 'fallback' };
   }
-  if (!process.env.ANTHROPIC_API_KEY) return fallbackClassify(text);
+  if (activeProvider() === 'none') return fallbackClassify(text);
 
-  try {
-    const client = new Anthropic();
-    const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 800,
-      system: CLASSIFY_SYSTEM,
-      output_config: {
-        format: { type: 'json_schema', schema: CLASSIFY_SCHEMA },
-        effort: 'low',
-      },
-      messages: [
-        {
-          role: 'user',
-          content: `${kind === 'LOST' ? 'Lost' : 'Found'} item report:\n\n"${text}"`,
-        },
-      ],
-    });
+  const { data, provider } = await askForJson<{ category: ItemCategory; title: string }>({
+    system: CLASSIFY_SYSTEM,
+    schemaName: 'lost_found_item',
+    schema: CLASSIFY_SCHEMA,
+    maxTokens: 800,
+    user: `${kind === 'LOST' ? 'Lost' : 'Found'} item report:\n\n"${text}"`,
+  });
 
-    const block = response.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') return fallbackClassify(text);
-
-    const parsed = JSON.parse(block.text) as { category: ItemCategory; title: string };
-    if (
-      !Object.values(ItemCategory).includes(parsed.category) ||
-      typeof parsed.title !== 'string' ||
-      !parsed.title.trim()
-    ) {
-      return fallbackClassify(text);
-    }
-
-    return { category: parsed.category, title: parsed.title.trim(), source: 'ai' };
-  } catch (error) {
-    console.error('[lost-found] classify failed, using fallback:', error);
+  if (
+    !data ||
+    !Object.values(ItemCategory).includes(data.category) ||
+    typeof data.title !== 'string' ||
+    !data.title.trim()
+  ) {
     return fallbackClassify(text);
   }
+
+  return {
+    category: data.category,
+    title: data.title.trim(),
+    source: provider === 'none' ? 'fallback' : provider,
+  };
 }
 
 function describeCandidate(c: CandidateItem): string {
@@ -277,25 +264,17 @@ export async function findMatches(
   candidates: CandidateItem[]
 ): Promise<MatchOutcome> {
   if (candidates.length === 0) return { matches: [], source: 'fallback' };
-  if (!process.env.ANTHROPIC_API_KEY) return fallbackMatch(subject, candidates);
+  if (activeProvider() === 'none') return fallbackMatch(subject, candidates);
 
-  try {
-    const client = new Anthropic();
-    const subjectPlace = subject.hubName ?? subject.placeNote ?? 'location not given';
-    const opposite = subject.kind === 'LOST' ? 'found' : 'lost';
+  const subjectPlace = subject.hubName ?? subject.placeNote ?? 'location not given';
+  const opposite = subject.kind === 'LOST' ? 'found' : 'lost';
 
-    const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 4000,
-      system: MATCH_SYSTEM,
-      output_config: {
-        format: { type: 'json_schema', schema: MATCH_SCHEMA },
-        effort: 'low',
-      },
-      messages: [
-        {
-          role: 'user',
-          content: `The report to match (${subject.kind.toLowerCase()}):
+  const { data, provider } = await askForJson<{ matches: ScoredMatch[] }>({
+    system: MATCH_SYSTEM,
+    schemaName: 'lost_found_matches',
+    schema: MATCH_SCHEMA,
+    maxTokens: 4000,
+    user: `The report to match (${subject.kind.toLowerCase()}):
   description: "${subject.description}"
   where: ${subjectPlace}
   when: ${subject.occurredAt.toISOString().slice(0, 16).replace('T', ' ')}
@@ -304,32 +283,22 @@ Candidate ${opposite} reports:
 ${candidates.map(describeCandidate).join('\n')}
 
 Score every candidate. Return the candidateId exactly as given.`,
-        },
-      ],
-    });
+  });
 
-    const block = response.content.find((b) => b.type === 'text');
-    if (!block || block.type !== 'text') return fallbackMatch(subject, candidates);
+  if (!data || !Array.isArray(data.matches)) return fallbackMatch(subject, candidates);
 
-    const parsed = JSON.parse(block.text) as { matches: ScoredMatch[] };
-    if (!Array.isArray(parsed.matches)) return fallbackMatch(subject, candidates);
+  // Drop anything referencing an id we did not send — a hallucinated id would
+  // otherwise become a dangling suggestion row.
+  const validIds = new Set(candidates.map((c) => c.id));
+  const matches = data.matches
+    .filter(
+      (m) =>
+        validIds.has(m.candidateId) &&
+        typeof m.score === 'number' &&
+        m.score >= 0 &&
+        m.score <= 100
+    )
+    .sort((a, b) => b.score - a.score);
 
-    // Drop anything referencing an id we did not send — a hallucinated id would
-    // otherwise become a dangling suggestion row.
-    const validIds = new Set(candidates.map((c) => c.id));
-    const matches = parsed.matches
-      .filter(
-        (m) =>
-          validIds.has(m.candidateId) &&
-          typeof m.score === 'number' &&
-          m.score >= 0 &&
-          m.score <= 100
-      )
-      .sort((a, b) => b.score - a.score);
-
-    return { matches, source: 'ai' };
-  } catch (error) {
-    console.error('[lost-found] matching failed, using fallback:', error);
-    return fallbackMatch(subject, candidates);
-  }
+  return { matches, source: provider === 'none' ? 'fallback' : provider };
 }

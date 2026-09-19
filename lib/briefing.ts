@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import type { FleetSummary, HubBalance, HourlyDemand } from '@/lib/analytics';
+import { askForJson, activeProvider } from '@/lib/ai';
 
 /**
  * The morning briefing: the day's fleet numbers rewritten as the three or four
@@ -14,7 +14,7 @@ import type { FleetSummary, HubBalance, HourlyDemand } from '@/lib/analytics';
 export interface Briefing {
   headline: string;
   actions: string[];
-  source: 'ai' | 'fallback';
+  source: 'anthropic' | 'groq' | 'fallback';
 }
 
 const SYSTEM_PROMPT = `You write the morning operations briefing for the shared-cycle fleet at the Isha Yoga Center campus. Your reader is the coordinator who decides where staff go this morning.
@@ -94,7 +94,7 @@ export async function generateBriefing(
   hubs: HubBalance[],
   demand: HourlyDemand[]
 ): Promise<Briefing> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (activeProvider() === 'none') {
     return fallbackBriefing(summary, hubs);
   }
 
@@ -113,42 +113,22 @@ export async function generateBriefing(
     now: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
   };
 
-  try {
-    const client = new Anthropic();
+  const { data, provider } = await askForJson<Omit<Briefing, 'source'>>({
+    system: SYSTEM_PROMPT,
+    schemaName: 'morning_briefing',
+    schema: BRIEFING_SCHEMA,
+    maxTokens: 2000,
+    user: `Current fleet state:\n\n${JSON.stringify(payload, null, 2)}`,
+  });
 
-    const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      output_config: {
-        format: { type: 'json_schema', schema: BRIEFING_SCHEMA },
-        effort: 'low',
-      },
-      messages: [
-        {
-          role: 'user',
-          content: `Current fleet state:\n\n${JSON.stringify(payload, null, 2)}`,
-        },
-      ],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
-      return fallbackBriefing(summary, hubs);
-    }
-
-    const parsed = JSON.parse(textBlock.text) as Omit<Briefing, 'source'>;
-    if (
-      typeof parsed.headline !== 'string' ||
-      !Array.isArray(parsed.actions) ||
-      parsed.actions.length === 0
-    ) {
-      return fallbackBriefing(summary, hubs);
-    }
-
-    return { ...parsed, source: 'ai' };
-  } catch (error) {
-    console.error('[briefing] Claude call failed, using fallback:', error);
+  if (
+    !data ||
+    typeof data.headline !== 'string' ||
+    !Array.isArray(data.actions) ||
+    data.actions.length === 0
+  ) {
     return fallbackBriefing(summary, hubs);
   }
+
+  return { ...data, source: provider === 'none' ? 'fallback' : provider };
 }

@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { FaultCategory, FaultSeverity } from '@prisma/client';
+import { askForJson, activeProvider } from '@/lib/ai';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
@@ -24,8 +24,8 @@ export interface TriageResult {
   severity: FaultSeverity;
   safeToRide: boolean;
   summary: string;
-  /** Whether this came from Claude or the offline fallback classifier. */
-  source: 'ai' | 'fallback';
+  /** Which provider produced this, or 'fallback' for the offline classifier. */
+  source: 'anthropic' | 'groq' | 'fallback';
   /** True when a fault photo was included in the assessment. */
   usedPhoto: boolean;
 }
@@ -172,66 +172,37 @@ export async function triageFaultReport(
     };
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (activeProvider() === 'none') {
     return fallbackTriage(notes);
   }
 
-  try {
-    const client = new Anthropic();
-    const photo = issuePhotoUrl ? await loadPhoto(issuePhotoUrl) : null;
+  const photo = issuePhotoUrl ? await loadPhoto(issuePhotoUrl) : null;
 
-    const content: Anthropic.ContentBlockParam[] = [];
-    if (photo) {
-      content.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: photo.mediaType,
-          data: photo.data,
-        },
-      });
-    }
-    content.push({
-      type: 'text',
-      text: `Cycle ${qrCode}. Rider's fault report:\n\n"${notes}"${
-        photo ? '\n\nThe rider also attached the photo above.' : ''
-      }`,
-    });
+  const { data, provider } = await askForJson<Omit<TriageResult, 'source' | 'usedPhoto'>>({
+    system: SYSTEM_PROMPT,
+    schemaName: 'fault_triage',
+    schema: TRIAGE_SCHEMA,
+    image: photo,
+    maxTokens: 1000,
+    user: `Cycle ${qrCode}. Rider's fault report:\n\n"${notes}"${
+      photo ? '\n\nThe rider also attached the photo above.' : ''
+    }`,
+  });
 
-    const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      output_config: {
-        format: { type: 'json_schema', schema: TRIAGE_SCHEMA },
-        effort: 'low',
-      },
-      messages: [{ role: 'user', content }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    if (!textBlock || textBlock.type !== 'text') {
-      return fallbackTriage(notes);
-    }
-
-    const parsed = JSON.parse(textBlock.text) as Omit<
-      TriageResult,
-      'source' | 'usedPhoto'
-    >;
-
-    // Trust but verify: a schema-valid response can still carry a value we do
-    // not recognise if the schema and the Prisma enums ever drift apart.
-    if (
-      !Object.values(FaultCategory).includes(parsed.category) ||
-      !Object.values(FaultSeverity).includes(parsed.severity) ||
-      typeof parsed.safeToRide !== 'boolean'
-    ) {
-      return fallbackTriage(notes);
-    }
-
-    return { ...parsed, source: 'ai', usedPhoto: Boolean(photo) };
-  } catch (error) {
-    console.error('[triage] Claude call failed, using fallback:', error);
+  // Trust but verify: a schema-valid reply can still carry a value we do not
+  // recognise if the schema and the Prisma enums ever drift apart.
+  if (
+    !data ||
+    !Object.values(FaultCategory).includes(data.category) ||
+    !Object.values(FaultSeverity).includes(data.severity) ||
+    typeof data.safeToRide !== 'boolean'
+  ) {
     return fallbackTriage(notes);
   }
+
+  return {
+    ...data,
+    source: provider === 'none' ? 'fallback' : provider,
+    usedPhoto: Boolean(photo),
+  };
 }
