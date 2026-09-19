@@ -89,7 +89,7 @@ export default function LostFoundBoard({
             No pairings above the confidence threshold right now.
           </p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3 s-scroll s-scroll-tall">
             {matches.map((match) => {
               const strong = match.score >= 85;
               return (
@@ -201,7 +201,7 @@ export default function LostFoundBoard({
           {openLostItems.length === 0 ? (
             <p className="s-body">Nothing reported lost.</p>
           ) : (
-            <ul className="space-y-0">
+            <ul className="space-y-0 s-scroll">
               {openLostItems.map((item) => (
                 <li
                   key={item.id}
@@ -232,7 +232,7 @@ export default function LostFoundBoard({
           {openFoundItems.length === 0 ? (
             <p className="s-body">Nothing handed in.</p>
           ) : (
-            <ul className="space-y-0">
+            <ul className="space-y-0 s-scroll">
               {openFoundItems.map((item) => (
                 <li
                   key={item.id}

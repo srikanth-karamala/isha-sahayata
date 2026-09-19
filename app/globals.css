@@ -1795,3 +1795,27 @@ body {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* Lists on the staff console that grow with use — suggested pairings, and the
+   two open-report columns. Left unbounded they pushed the page taller every
+   time someone filed a report, so the stat row and the pairings scrolled out
+   of reach on a laptop. Capped and scrolled instead, with the cap in vh so a
+   tall screen still shows more rows rather than wasting the space. */
+.yc-staff .s-scroll {
+  max-height: 26rem;
+  overflow-y: auto;
+  /* Keeps the last row from sitting flush against the fade of the edge. */
+  padding-right: 2px;
+  overscroll-behavior: contain;
+}
+
+.yc-staff .s-scroll-tall { max-height: min(60vh, 34rem); }
+
+/* Unobtrusive scrollbar — this is a data surface, not a document. */
+.yc-staff .s-scroll::-webkit-scrollbar { width: 8px; }
+.yc-staff .s-scroll::-webkit-scrollbar-track { background: transparent; }
+.yc-staff .s-scroll::-webkit-scrollbar-thumb {
+  background: var(--s-line);
+  border-radius: 999px;
+}
+.yc-staff .s-scroll::-webkit-scrollbar-thumb:hover { background: var(--s-faint); }
