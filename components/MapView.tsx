@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import { LngLatBounds, Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
 import type { GeoJSONSource, FlyToOptions } from 'maplibre-gl';
+import type { Feature, LineString } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Box, Crosshair } from 'lucide-react';
 import type { HubSummary, LiveRide } from '@/lib/types';
@@ -33,7 +34,7 @@ function riderElement() {
   return wrap;
 }
 
-function pathToGeoJSON(path: [number, number][]): GeoJSON.Feature<GeoJSON.LineString> {
+function pathToGeoJSON(path: [number, number][]): Feature<LineString> {
   return {
     type: 'Feature',
     properties: {},

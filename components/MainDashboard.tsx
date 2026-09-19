@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { QrCode } from 'lucide-react';
+import { QrCode, ShieldAlert } from 'lucide-react';
 import PhoneShell from './PhoneShell';
 import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
@@ -38,6 +38,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   const [activeRide, setActiveRide] = useState<CycleDetail | null>(null);
   const [islandOpen, setIslandOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(true);
+  // Set when a reported fault comes back unsafe — the rider must be told.
+  const [faultVerdict, setFaultVerdict] = useState<string | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
   const sheetDragY = useRef(0);
   const tracker = useRideTracker();
@@ -489,6 +491,35 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           />
         )}
 
+        {faultVerdict && (
+          <div className="absolute inset-x-0 bottom-0 z-50 p-4" role="alert">
+            <div
+              className="yc-glass-sheet p-4 flex items-start gap-3"
+              style={{ borderTop: '3px solid #d03b3b' }}
+            >
+              <ShieldAlert
+                className="w-5 h-5 shrink-0 mt-0.5"
+                style={{ color: '#d03b3b' }}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="yc-title yc-title-sm" style={{ color: '#d03b3b' }}>
+                  Do not ride this cycle
+                </p>
+                <p className="yc-body-sm mt-0.5">{faultVerdict}</p>
+                <p className="yc-meta mt-1">
+                  It has been pulled from service and staff are notified.
+                </p>
+              </div>
+              <button
+                onClick={() => setFaultVerdict(null)}
+                className="yc-btn-ghost text-xs px-3 py-1.5 shrink-0"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeQr && rider && (
           <ActionModal
             qrCode={activeQr}
@@ -520,8 +551,12 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             onReturned={async () => {
               await endRideLocally();
             }}
-            onFaulted={async () => {
+            onFaulted={async (triage) => {
               await endRideLocally();
+              // An unsafe verdict is the one thing the rider must not miss.
+              if (triage && !triage.safeToRide) {
+                setFaultVerdict(triage.summary);
+              }
             }}
           />
         )}

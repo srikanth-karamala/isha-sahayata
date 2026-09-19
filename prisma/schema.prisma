@@ -18,6 +18,22 @@ enum RideStatus {
   COMPLETED
 }
 
+enum FaultCategory {
+  BRAKES
+  CHAIN
+  TYRE
+  FRAME
+  ELECTRICAL
+  OTHER
+}
+
+enum FaultSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
 enum AuditAction {
   CHECKOUT
   DROP_OFF
@@ -45,6 +61,15 @@ model Cycle {
   issueNotes     String?
   issuePhotoUrl  String?
   repairPhotoUrl String?
+
+  /// AI triage of issueNotes (and the fault photo when present), written by
+  /// lib/triage.ts on report. Null until a fault has been triaged.
+  faultCategory  FaultCategory?
+  faultSeverity  FaultSeverity?
+  /// false = unsafe to ride; pull from service immediately.
+  safeToRide     Boolean?
+  faultSummary   String?
+  triagedAt      DateTime?
   heldByUserId   String?
   heldByUser     User?       @relation(fields: [heldByUserId], references: [id])
   updatedAt      DateTime    @updatedAt

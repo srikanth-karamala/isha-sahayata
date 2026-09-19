@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { repairCycle, getActiveRides } from '@/app/actions';
 import { adminLogout } from './auth-actions';
-import { Wrench, CheckCircle2, MapPin, AlertTriangle, ArrowLeft, LogOut, Camera } from 'lucide-react';
+import { Wrench, CheckCircle2, MapPin, AlertTriangle, ArrowLeft, LogOut, Camera, ShieldAlert, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import type { CycleStatus, HubSummary, LiveRide } from '@/lib/types';
+import type { FaultCategory, FaultSeverity } from '@prisma/client';
 import { formatDistance } from '@/lib/geo';
 
 const MapView = dynamic(() => import('@/components/MapView'), {
@@ -25,6 +26,11 @@ interface Cycle {
   status: CycleStatus;
   issueNotes?: string | null;
   issuePhotoUrl?: string | null;
+  faultCategory?: FaultCategory | null;
+  faultSeverity?: FaultSeverity | null;
+  safeToRide?: boolean | null;
+  faultSummary?: string | null;
+  triagedAt?: Date | null;
   latitude?: number | null;
   longitude?: number | null;
   updatedAt: Date;
@@ -38,6 +44,14 @@ interface TodayStats {
   ridesToday: number;
   kmCoveredToday: number;
 }
+
+/** Severity badge styling. Colour never stands alone — each badge is labelled. */
+const SEVERITY_STYLE: Record<FaultSeverity, string> = {
+  CRITICAL: 'bg-rose-100 text-rose-900 ring-rose-200',
+  HIGH: 'bg-orange-100 text-orange-900 ring-orange-200',
+  MEDIUM: 'bg-amber-100 text-amber-900 ring-amber-200',
+  LOW: 'bg-stone-100 text-stone-700 ring-stone-200',
+};
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -139,15 +153,11 @@ export default function AdminClient({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="yc-panel p-4">
-          <p className="yc-eyebrow">Rides today</p>
-          <p className="yc-title text-[28px] mt-1 tabular-nums">{stats.ridesToday}</p>
-        </div>
-        <div className="yc-panel p-4">
-          <p className="yc-eyebrow">Km covered</p>
-          <p className="yc-title text-[28px] mt-1 tabular-nums">{stats.kmCoveredToday.toFixed(1)}</p>
-        </div>
+      <div className="yc-panel p-4">
+        <p className="yc-eyebrow">Km covered today</p>
+        <p className="yc-title text-[28px] mt-1 tabular-nums">
+          {stats.kmCoveredToday.toFixed(1)}
+        </p>
       </div>
 
       <div className="yc-panel overflow-hidden">
@@ -212,6 +222,44 @@ export default function AdminClient({
                 </div>
 
                 <div className="space-y-2 mb-4">
+                  {/* AI triage: category, urgency and the safe-to-ride verdict */}
+                  {cycle.faultSeverity && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ring-1 ${
+                          SEVERITY_STYLE[cycle.faultSeverity]
+                        }`}
+                      >
+                        {cycle.faultSeverity}
+                      </span>
+                      {cycle.faultCategory && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 ring-1 ring-stone-200">
+                          {cycle.faultCategory}
+                        </span>
+                      )}
+                      {cycle.safeToRide === false && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-600 text-white flex items-center gap-1">
+                          <ShieldAlert className="w-3 h-3" />
+                          Unsafe to ride
+                        </span>
+                      )}
+                      <span className="yc-meta flex items-center gap-0.5 ml-auto text-[9px]">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        AI triaged
+                      </span>
+                    </div>
+                  )}
+
+                  {/* The summary is a condensed restatement; hide it when it just
+                      repeats the rider's own words (as the offline fallback does). */}
+                  {cycle.faultSummary &&
+                    cycle.faultSummary.replace(/\.\.\.$/, '').trim() !==
+                      (cycle.issueNotes ?? '').slice(0, 67).trim() && (
+                      <p className="text-xs font-semibold text-[var(--ink)]">
+                        {cycle.faultSummary}
+                      </p>
+                    )}
+
                   <div className="bg-rose-50/90 border border-rose-100 p-3 rounded-[1.05rem]">
                     <p className="text-xs font-semibold text-rose-900 mb-1 flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5" />

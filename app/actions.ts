@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { triageFaultReport, SEVERITY_RANK } from '@/lib/triage';
 import { revalidatePath } from 'next/cache';
 import type { CycleStatus } from '@prisma/client';
 import type { CycleDetail, HubSummary } from '@/lib/types';
@@ -337,6 +338,11 @@ export async function reportFault(
     issuePhotoUrl = await saveUploadDataUrl(issuePhotoDataUrl, 'faults');
   }
 
+  // Claude classifies the report (and the photo, when one was attached) so
+  // staff get category, urgency and a safe-to-ride verdict rather than a raw
+  // note. Never throws: falls back to a keyword classifier.
+  const triage = await triageFaultReport(notes, code, issuePhotoUrl);
+
   const updatedCycle = await prisma.cycle.update({
     where: { qrCode: code },
     data: {
@@ -344,6 +350,11 @@ export async function reportFault(
       issueNotes: notes,
       issuePhotoUrl,
       repairPhotoUrl: null,
+      faultCategory: triage.category,
+      faultSeverity: triage.severity,
+      safeToRide: triage.safeToRide,
+      faultSummary: triage.summary,
+      triagedAt: new Date(),
       latitude: lat ?? null,
       longitude: lng ?? null,
       heldByUserId: null,
@@ -365,7 +376,7 @@ export async function reportFault(
 
   revalidatePath('/');
   revalidatePath('/admin');
-  return { success: true, cycle: updatedCycle };
+  return { success: true, cycle: updatedCycle, triage };
 }
 
 export async function repairCycle(qrCode: string, targetHubId: string, repairPhotoDataUrl: string) {
@@ -405,6 +416,11 @@ export async function repairCycle(qrCode: string, targetHubId: string, repairPho
       issueNotes: null,
       issuePhotoUrl: null,
       repairPhotoUrl,
+      faultCategory: null,
+      faultSeverity: null,
+      safeToRide: null,
+      faultSummary: null,
+      triagedAt: null,
       heldByUserId: null,
     },
   });
@@ -423,11 +439,24 @@ export async function repairCycle(qrCode: string, targetHubId: string, repairPho
   return { success: true, cycle: updatedCycle };
 }
 
+// Maintenance queue ordered by triaged urgency rather than report time:
+// unsafe cycles first, then by severity, then oldest-reported within a band.
 export async function getMaintenanceCycles() {
-  return await prisma.cycle.findMany({
+  const cycles = await prisma.cycle.findMany({
     where: { status: 'MAINTENANCE' },
     include: { currentHub: true },
-    orderBy: { updatedAt: 'desc' },
+  });
+
+  return cycles.sort((a, b) => {
+    const aUnsafe = a.safeToRide === false ? 1 : 0;
+    const bUnsafe = b.safeToRide === false ? 1 : 0;
+    if (aUnsafe !== bUnsafe) return bUnsafe - aUnsafe;
+
+    const aRank = a.faultSeverity ? SEVERITY_RANK[a.faultSeverity] : 0;
+    const bRank = b.faultSeverity ? SEVERITY_RANK[b.faultSeverity] : 0;
+    if (aRank !== bRank) return bRank - aRank;
+
+    return a.updatedAt.getTime() - b.updatedAt.getTime();
   });
 }
 

@@ -20,7 +20,9 @@ interface ActionModalProps {
   onClose: () => void;
   onUnlocked: (qrCode: string) => void;
   onReturned: () => void;
-  onFaulted: () => void;
+  /** Receives the AI triage verdict so the rider can be warned when the
+      cycle they just reported is unsafe to ride. */
+  onFaulted: (triage?: { safeToRide: boolean; summary: string }) => void;
 }
 
 type View = 'loading' | 'ready' | 'fault-form' | 'working' | 'success' | 'error';
@@ -102,8 +104,15 @@ export default function ActionModal({
         onReturned();
         return;
       }
-      await reportFault(qrCode, userId, faultNotes, lat, lng, faultPhoto ?? undefined);
-      onFaulted();
+      const result = await reportFault(
+        qrCode,
+        userId,
+        faultNotes,
+        lat,
+        lng,
+        faultPhoto ?? undefined
+      );
+      onFaulted(result.triage);
     } catch (error: unknown) {
       const text = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
       setMessage(text);
