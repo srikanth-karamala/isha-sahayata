@@ -9,6 +9,7 @@ import ActionModal from './ActionModal';
 import BottomNav, { type RiderTab } from './BottomNav';
 import ReportFaultPanel from './ReportFaultPanel';
 import LostFoundPanel from './LostFoundPanel';
+import { getOpenItems } from '@/app/lost-found-actions';
 import SplashScreen from './SplashScreen';
 import IdentityGate from './IdentityGate';
 import DynamicIsland from './DynamicIsland';
@@ -52,6 +53,23 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   // The map earns its place on the Cycles tab and during a ride; elsewhere it
   // is decoration behind a full-height panel.
   const showMap = tab === 'cycles' || Boolean(activeRide);
+
+  // Fleet-wide counts for the island on the non-map tabs.
+  const faultsReported = hubs.reduce((sum, h) => sum + faultCount(h), 0);
+
+  // How many found items are waiting to be claimed. Loaded once when the
+  // Lost & Found tab is first opened, rather than on every render.
+  const [itemsWaiting, setItemsWaiting] = useState(0);
+  useEffect(() => {
+    if (tab !== 'lost-found') return;
+    let cancelled = false;
+    void getOpenItems('FOUND', 50).then((items) => {
+      if (!cancelled) setItemsWaiting(items.length);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab]);
 
   // Shown once per mount while the map and hub data settle.
   const [splashDone, setSplashDone] = useState(false);
@@ -178,7 +196,40 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
       ? 'no bikes near'
       : 'campus';
 
-  const islandMode = nearDrop ? 'near-drop' : activeRide ? 'riding' : 'idle';
+  // A ride in progress always wins — drop-off is the only thing that matters
+  // then. Otherwise the island speaks about the tab the rider is looking at.
+  const islandMode = nearDrop
+    ? 'near-drop'
+    : activeRide
+      ? 'riding'
+      : tab === 'report'
+        ? 'report'
+        : tab === 'lost-found'
+          ? 'lost-found'
+          : 'idle';
+
+  // The header stat block follows the same rule as the island: on a tab that is
+  // not about cycles, a cycle count and a "near you" distance are numbers the
+  // reader cannot act on. An active ride keeps the cycle framing on every tab,
+  // because getting the cycle back is then the only task that matters.
+  const headerStat: { value: number | string; caption: string; detail?: string } =
+    !activeRide && tab === 'report'
+      ? {
+          value: faultsReported,
+          caption: 'reported',
+          detail: faultsReported > 0 ? 'with staff' : 'all running',
+        }
+      : !activeRide && tab === 'lost-found'
+        ? {
+            value: itemsWaiting,
+            caption: 'handed in',
+            detail: itemsWaiting > 0 ? 'awaiting claim' : 'nothing yet',
+          }
+        : {
+            value: headerReady,
+            caption: userPos || tracker.currentPos ? 'near you' : 'ready',
+            detail: userPos || tracker.currentPos ? headerMeta : undefined,
+          };
 
   const confirmNearDrop = async () => {
     if (!activeRide || !rider || !dropTarget) return;
@@ -277,6 +328,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           }}
           onFocusDropOff={focusDropOff}
           readyCount={headerReady}
+          faultsReported={faultsReported}
+          itemsWaiting={itemsWaiting}
           nearbyLabel={headerMeta}
           qrCode={activeRide?.qrCode}
           distanceMeters={tracker.distanceMeters}
@@ -298,12 +351,17 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 <h1 className="yc-display text-[19px] truncate mt-0.5">Isha Sahayata</h1>
               </div>
               <div className="text-right shrink-0 pl-2.5 border-l border-[var(--separator)] max-w-[7.5rem]">
-                <p className="yc-title yc-title-sm tabular-nums leading-none">{headerReady}</p>
-                <p className="yc-meta mt-1 truncate" title={headerMeta}>
-                  {userPos || tracker.currentPos ? 'near you' : 'ready'}
+                <p className="yc-title yc-title-sm tabular-nums leading-none">
+                  {headerStat.value}
                 </p>
-                {(userPos || tracker.currentPos) && (
-                  <p className="yc-meta mt-0.5 truncate opacity-80">{headerMeta}</p>
+                <p className="yc-meta mt-1 truncate">{headerStat.caption}</p>
+                {headerStat.detail && (
+                  <p
+                    className="yc-meta mt-0.5 truncate opacity-80"
+                    title={headerStat.detail}
+                  >
+                    {headerStat.detail}
+                  </p>
                 )}
               </div>
             </div>

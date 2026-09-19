@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Sparkles,
   AlertTriangle,
@@ -12,8 +12,12 @@ import {
   BarChart3,
   Route,
 } from 'lucide-react';
+import { getLiveOverview } from '@/app/actions';
 import type { FleetSummary, HubBalance, HourlyDemand } from '@/lib/analytics';
 import type { Briefing } from '@/lib/briefing';
+
+/** How often the overview re-reads the numbers that change during a shift. */
+const REFRESH_MS = 10_000;
 
 /**
  * Fleet insight panels for the admin dashboard.
@@ -52,15 +56,18 @@ function StatTile({
   unit,
   Icon,
   alert = false,
+  note,
 }: {
   label: string;
   value: number | string;
   unit?: string;
   Icon: typeof Bike;
   alert?: boolean;
+  /** One line of context under the number — what it is measured against. */
+  note?: string;
 }) {
   return (
-    <div className="yc-panel p-4">
+    <div className="yc-panel p-4 flex flex-col">
       <div className="flex items-center gap-2 mb-2">
         <Icon
           className="w-4 h-4"
@@ -79,12 +86,21 @@ function StatTile({
           </span>
         )}
       </p>
+      {note && (
+        <p className="yc-meta mt-2 leading-snug">{note}</p>
+      )}
     </div>
   );
 }
 
 /** Hourly demand: one series, so no legend — the title names it. */
-function DemandChart({ demand }: { demand: HourlyDemand[] }) {
+function DemandChart({
+  demand,
+  updatedAt,
+}: {
+  demand: HourlyDemand[];
+  updatedAt?: string | null;
+}) {
   const [hover, setHover] = useState<number | null>(null);
 
   const W = 720;
@@ -112,7 +128,10 @@ function DemandChart({ demand }: { demand: HourlyDemand[] }) {
       <div className="flex items-start justify-between mb-1">
         <div>
           <h3 className="yc-title yc-title-sm">Cycle demand by hour</h3>
-          <p className="yc-meta">Average rides started per hour, last 14 days</p>
+          <p className="yc-meta">
+            Rides started per hour today
+            {updatedAt && ` · updated ${updatedAt}`}
+          </p>
         </div>
         {active && (
           <div className="text-right">
@@ -133,7 +152,11 @@ function DemandChart({ demand }: { demand: HourlyDemand[] }) {
         viewBox={`0 0 ${W} ${H}`}
         className="w-full"
         role="img"
-        aria-label={`Cycle demand by hour of day. Peak is ${peak.rides} rides around ${peak.hour}:00.`}
+        aria-label={
+          peak.rides > 0
+            ? `Rides started per hour today. Busiest hour so far is ${peak.hour}:00 with ${peak.rides} rides.`
+            : 'Rides started per hour today. No rides recorded yet today.'
+        }
         onMouseLeave={() => setHover(null)}
       >
         <defs>
@@ -160,7 +183,7 @@ function DemandChart({ demand }: { demand: HourlyDemand[] }) {
               fontSize="9"
               fill={INK.muted}
             >
-              {Math.round(max * t * 10) / 10}
+              {Math.round(max * t)}
             </text>
           </g>
         ))}
@@ -174,24 +197,30 @@ function DemandChart({ demand }: { demand: HourlyDemand[] }) {
           strokeLinejoin="round"
         />
 
-        <circle
-          cx={x(peak.hour)}
-          cy={y(peak.rides)}
-          r="4.5"
-          fill={AMBER[300]}
-          stroke="#fffcf6"
-          strokeWidth="2"
-        />
-        <text
-          x={x(peak.hour)}
-          y={Math.max(y(peak.rides) - 10, PAD.top - 4)}
-          textAnchor="middle"
-          fontSize="10"
-          fontWeight="700"
-          fill={INK.secondary}
-        >
-          peak {peak.rides}
-        </text>
+        {/* Before the first ride of the day the series is flat at zero, where a
+            marker reading "peak 0" would label noise as a finding. */}
+        {peak.rides > 0 && (
+          <>
+            <circle
+              cx={x(peak.hour)}
+              cy={y(peak.rides)}
+              r="4.5"
+              fill={AMBER[300]}
+              stroke="#fffcf6"
+              strokeWidth="2"
+            />
+            <text
+              x={x(peak.hour)}
+              y={Math.max(y(peak.rides) - 10, PAD.top - 4)}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="700"
+              fill={INK.secondary}
+            >
+              peak {peak.rides}
+            </text>
+          </>
+        )}
 
         {active && (
           <line
@@ -359,9 +388,9 @@ function HubBalanceChart({ hubs }: { hubs: HubBalance[] }) {
 }
 
 export default function FleetInsights({
-  summary,
-  hubs,
-  demand,
+  summary: initialSummary,
+  hubs: initialHubs,
+  demand: initialDemand,
   briefing,
 }: {
   summary: FleetSummary;
@@ -369,13 +398,48 @@ export default function FleetInsights({
   demand: HourlyDemand[];
   briefing: Briefing;
 }) {
+  // The page that renders this is a server component, so without polling these
+  // three stay frozen at their render-time values for as long as the console is
+  // left open — which is most of a shift. The briefing is deliberately not
+  // refreshed: it is a model call, and its advice is written for the morning
+  // rather than for the current minute.
+  const [summary, setSummary] = useState(initialSummary);
+  const [hubs, setHubs] = useState(initialHubs);
+  const [demand, setDemand] = useState(initialDemand);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const pull = () => {
+      void getLiveOverview().then((next) => {
+        if (cancelled) return;
+        setSummary(next.summary);
+        setHubs(next.balances);
+        setDemand(next.demand);
+        setUpdatedAt(
+          new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        );
+      });
+    };
+
+    const id = window.setInterval(pull, REFRESH_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Row 1: briefing beside the KPI grid — the two things a coordinator
           reads first, without scrolling past one to reach the other. */}
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-4 items-start">
         <div
-          className="yc-panel p-5 h-full"
+          className="yc-panel p-5"
           style={{
             background:
               'linear-gradient(135deg, rgba(245,183,0,0.14) 0%, var(--surface) 60%)',
@@ -412,31 +476,41 @@ export default function FleetInsights({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <StatTile label="Rides today" value={summary.ridesToday} Icon={Bike} />
+          <StatTile
+            label="Rides today"
+            value={summary.ridesToday}
+            Icon={Bike}
+            note={`${summary.ridesThisWeek} in the last 7 days`}
+          />
           <StatTile
             label="Available now"
             value={`${summary.available}/${summary.totalCycles}`}
             Icon={CheckCircle2}
+            note={`${summary.inUse} out on rides`}
           />
           <StatTile
             label="Avg ride"
             value={summary.avgRideMinutes}
             unit="min"
             Icon={Clock}
+            note={`${summary.kmThisWeek} km this week`}
           />
           <StatTile
             label="Unsafe to ride"
             value={summary.unsafeCycles}
             Icon={AlertTriangle}
             alert={summary.unsafeCycles > 0}
+            note={`${summary.maintenance} in maintenance`}
           />
         </div>
       </div>
 
       {/* Row 2: the demand curve needs width; hub availability is a short list
-          and sits beside it rather than under it. */}
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-4 items-start">
-        <DemandChart demand={demand} />
+          and sits beside it rather than under it. Stretched rather than
+          top-aligned so the two panels end level — the curve is a fixed-ratio
+          SVG and would otherwise leave a shelf of empty card beside the list. */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-4 items-stretch">
+        <DemandChart demand={demand} updatedAt={updatedAt} />
         <HubBalanceChart hubs={hubs} />
       </div>
 

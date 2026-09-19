@@ -136,7 +136,11 @@ function MapView({
       center: toLngLat(CAMPUS_CENTER),
       zoom: 16.2,
       minZoom: 15,
-      maxZoom: 18.5,
+      // The offline pack stops at z18 (lib/map-style.ts declares maxzoom: 18).
+      // Allowing 18.5 let the camera past the deepest tile, so MapLibre had to
+      // upscale one level and the imagery went soft exactly when a rider zoomed
+      // in to find a dock. Cap the camera at what the pack actually contains.
+      maxZoom: 18,
       pitch: VIEW_3D.pitch,
       bearing: VIEW_3D.bearing,
       maxPitch: 62,

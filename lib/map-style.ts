@@ -66,15 +66,32 @@ export const campusSatelliteStyle: StyleSpecification = {
 };
 
 /**
+ * The area the packed z18 tiles actually cover, in degrees.
+ *
+ * This is the footprint of the tile grid on disk (x 186945–186954,
+ * y 123024–123034 at z18), not the seeded hub extent. The two are close but
+ * not identical, and the difference is what used to show as blank ground.
+ */
+const TILE_COVERAGE = {
+  west: 76.72989,
+  south: 10.96951,
+  east: 76.74362,
+  north: 10.98434,
+} as const;
+
+/**
  * Keep pan/zoom inside the packed tile footprint.
- * Large padding showed empty black beyond the local imagery when zoomed out.
+ *
+ * This previously padded CAMPUS_BOUNDS outward by 8%, which let the camera
+ * reach about 109 m north of where the imagery ends. Sivapadam 2 sits at
+ * latitude 10.9842 — roughly 15 m inside the tile edge — so selecting that hub
+ * panned straight into the blank strip and the map read as failing to load.
+ * Clamping to the imagery itself means every reachable view has tiles under it.
  */
 export function campusMaxBounds(): [[number, number], [number, number]] {
-  const padLng = (CAMPUS_BOUNDS.east - CAMPUS_BOUNDS.west) * 0.08;
-  const padLat = (CAMPUS_BOUNDS.north - CAMPUS_BOUNDS.south) * 0.08;
   return [
-    [CAMPUS_BOUNDS.west - padLng, CAMPUS_BOUNDS.south - padLat],
-    [CAMPUS_BOUNDS.east + padLng, CAMPUS_BOUNDS.north + padLat],
+    [TILE_COVERAGE.west, TILE_COVERAGE.south],
+    [TILE_COVERAGE.east, TILE_COVERAGE.north],
   ];
 }
 

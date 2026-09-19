@@ -1,10 +1,21 @@
 'use client';
 
 import { useRef } from 'react';
-import { Bike } from 'lucide-react';
+import { Bike, Wrench, Search } from 'lucide-react';
 import { formatDuration } from '@/lib/geo';
 
-export type IslandMode = 'idle' | 'riding' | 'near-drop';
+/**
+ * `idle`, `riding` and `near-drop` are ride states. `report` and `lost-found`
+ * are tab states: the island sits above every screen, so on tabs that have
+ * nothing to do with cycles it should say something about that screen rather
+ * than a cycle count the reader cannot act on.
+ */
+export type IslandMode =
+  | 'idle'
+  | 'riding'
+  | 'near-drop'
+  | 'report'
+  | 'lost-found';
 
 interface DynamicIslandProps {
   mode: IslandMode;
@@ -18,6 +29,10 @@ interface DynamicIslandProps {
   distanceMeters?: number;
   elapsedSeconds?: number;
   dropHubName?: string | null;
+  /** Cycles currently with staff — shown on the Report tab. */
+  faultsReported?: number;
+  /** Items handed in and waiting to be claimed — shown on Lost & Found. */
+  itemsWaiting?: number;
 }
 
 function shortQr(code: string) {
@@ -38,6 +53,8 @@ export default function DynamicIsland({
   distanceMeters = 0,
   elapsedSeconds = 0,
   dropHubName,
+  faultsReported = 0,
+  itemsWaiting = 0,
 }: DynamicIslandProps) {
   const startY = useRef(0);
   const startX = useRef(0);
@@ -76,7 +93,15 @@ export default function DynamicIsland({
         : 'Drop off'
       : mode === 'riding' && qrCode
         ? `${shortQr(qrCode)} · ${km}`
-        : `${readyCount} ready`;
+        : mode === 'report'
+          ? faultsReported > 0
+            ? `${faultsReported} with staff`
+            : 'All cycles running'
+          : mode === 'lost-found'
+            ? itemsWaiting > 0
+              ? `${itemsWaiting} handed in`
+              : 'Nothing handed in yet'
+            : `${readyCount} ready`;
 
   return (
     <div
@@ -105,7 +130,11 @@ export default function DynamicIsland({
       }}
     >
       <div className="yc-island-compact">
-        {mode === 'idle' ? (
+        {mode === 'report' ? (
+          <Wrench className="yc-island-icon" aria-hidden />
+        ) : mode === 'lost-found' ? (
+          <Search className="yc-island-icon" aria-hidden />
+        ) : mode === 'idle' ? (
           <span className="yc-island-dot" aria-hidden />
         ) : mode === 'near-drop' ? (
           <Bike className="yc-island-icon" aria-hidden />
@@ -120,6 +149,32 @@ export default function DynamicIsland({
 
       {expanded && (
         <div className="yc-island-panel" onPointerDown={(e) => e.stopPropagation()}>
+          {mode === 'report' && (
+            <>
+              <p className="yc-island-panel-body">
+                {faultsReported > 0
+                  ? `${faultsReported} cycle${faultsReported === 1 ? '' : 's'} are with staff for repair.`
+                  : 'Every cycle is in service right now.'}
+              </p>
+              <p className="yc-island-hint">
+                Flag a broken cycle below — you do not need to unlock it
+              </p>
+            </>
+          )}
+
+          {mode === 'lost-found' && (
+            <>
+              <p className="yc-island-panel-body">
+                {itemsWaiting > 0
+                  ? `${itemsWaiting} item${itemsWaiting === 1 ? '' : 's'} handed in and waiting to be claimed.`
+                  : 'Nothing has been handed in yet.'}
+              </p>
+              <p className="yc-island-hint">
+                Describe what you lost and it is matched against these
+              </p>
+            </>
+          )}
+
           {mode === 'idle' && (
             <>
               <p className="yc-island-panel-body">

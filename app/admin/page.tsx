@@ -1,5 +1,10 @@
 import { getActiveRides, getHubs, getMaintenanceCycles, getTodayStats } from '@/app/actions';
-import { getFleetSummary, getHourlyDemand, getHubBalances } from '@/lib/analytics';
+import {
+  getFleetSummary,
+  getHourlyDemand,
+  getHubBalances,
+  getTodayDemand,
+} from '@/lib/analytics';
 import { generateBriefing } from '@/lib/briefing';
 import { getLostFoundSummary, getOpenItems } from '@/app/lost-found-actions';
 import AdminClient from './AdminClient';
@@ -17,6 +22,7 @@ export default async function AdminPage() {
     liveRides,
     summary,
     demand,
+    avgDemand,
     balances,
     lfSummary,
     lostItems,
@@ -27,6 +33,7 @@ export default async function AdminPage() {
     getTodayStats(),
     getActiveRides(),
     getFleetSummary(),
+    getTodayDemand(),
     getHourlyDemand(),
     getHubBalances(),
     getLostFoundSummary(),
@@ -35,7 +42,9 @@ export default async function AdminPage() {
   ]);
 
   // Depends on the aggregates above, so it runs after them.
-  const briefing = await generateBriefing(summary, balances, demand);
+  // The briefing reasons about the campus rhythm, so it gets the 14-day
+  // average; the chart shows today, which is what staff watch change.
+  const briefing = await generateBriefing(summary, balances, avgDemand);
 
   return (
     <StaffConsole

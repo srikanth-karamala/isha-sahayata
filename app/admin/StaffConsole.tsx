@@ -8,16 +8,17 @@ import { adminLogout } from './auth-actions';
 export type StaffTab = 'overview' | 'cycles' | 'lost-found';
 
 /**
- * Shell for the staff console: header, tab rail, and the panel for the
- * selected tab.
+ * Shell for the staff console: a sidebar rail, a greeting header, and the panel
+ * for the selected tab.
  *
- * Three tabs rather than one long page, because a coordinator arrives with a
- * specific question — what needs doing this morning, which cycles are out of
- * service, has anyone handed in a lost bottle — and should not scroll past two
- * of those to reach the third.
+ * Three destinations rather than one long page, because a coordinator arrives
+ * with a specific question — what needs doing this morning, which cycles are out
+ * of service, has anyone handed in a lost bottle — and should not scroll past
+ * two of those to reach the third.
  *
- * The rail sits above the content on desktop and becomes a fixed bottom bar on
- * phones (see .s-tabs in globals.css).
+ * The rail is a left sidebar on desktop, where there is horizontal room to
+ * spare and a persistent nav helps orientation, and collapses to a fixed bottom
+ * bar on phones (see .s-side / .s-tabs in globals.css).
  */
 export default function StaffConsole({
   maintenanceCount,
@@ -65,62 +66,85 @@ export default function StaffConsole({
     'lost-found': lostFound,
   };
 
+  const heading: Record<StaffTab, { title: string; blurb: string }> = {
+    overview: {
+      title: 'Overview',
+      blurb: 'What the fleet is doing right now, and what to do about it.',
+    },
+    cycles: {
+      title: 'Cycles',
+      blurb: 'Reported faults, triaged by danger, and live rides in progress.',
+    },
+    'lost-found': {
+      title: 'Lost & Found',
+      blurb: 'Open reports and the pairs the matcher thinks describe one object.',
+    },
+  };
+
   return (
     <div className="yc-staff min-h-dvh">
-      <div className="mx-auto w-full max-w-[1400px] px-4 md:px-7 py-6 md:py-8">
-        <header className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+      <div className="s-shell">
+        {/* Sidebar: brand, destinations, and the exits. */}
+        <aside className="s-side">
+          <div className="s-side-brand">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/isha-logo.png"
               alt=""
-              width={44}
-              height={44}
-              className="rounded-[0.85rem] shrink-0"
-              style={{ boxShadow: '0 1px 3px rgba(20,24,31,.12)' }}
+              width={36}
+              height={36}
+              className="rounded-[0.7rem] shrink-0"
             />
-            <div>
-              <p className="s-eyebrow">Isha Sahayata</p>
-              <h1 className="s-h1 mt-0.5">Staff console</h1>
+            <div className="min-w-0">
+              <p className="s-side-title">Isha Sahayata</p>
+              <p className="s-side-sub">Staff console</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/" className="s-btn s-btn-quiet">
+
+          <nav className="s-tabs" aria-label="Console sections">
+            {tabs.map(({ id, label, Icon, count, alert }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={`s-tab ${tab === id ? 'is-active' : ''}`}
+                aria-current={tab === id ? 'page' : undefined}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="s-tab-label">{label}</span>
+                {count != null && (
+                  <span className={`s-tab-count ${alert ? 'is-alert' : ''}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+
+          <div className="s-side-foot">
+            <Link href="/" className="s-btn s-btn-quiet w-full">
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Rider app</span>
+              <span>Rider app</span>
             </Link>
             <form action={adminLogout}>
-              <button type="submit" className="s-btn s-btn-quiet">
+              <button type="submit" className="s-btn s-btn-quiet w-full">
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Log out</span>
+                <span>Log out</span>
               </button>
             </form>
           </div>
-        </header>
+        </aside>
 
-        <nav className="s-tabs mb-6" aria-label="Console sections">
-          {tabs.map(({ id, label, Icon, count, alert }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={`s-tab ${tab === id ? 'is-active' : ''}`}
-              aria-current={tab === id ? 'page' : undefined}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{label}</span>
-              {count != null && (
-                <span className={`s-tab-count ${alert ? 'is-alert' : ''}`}>
-                  {count}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+        <main className="s-main">
+          <header className="s-main-head">
+            <h1 className="s-h1">{heading[tab].title}</h1>
+            <p className="s-meta mt-1">{heading[tab].blurb}</p>
+          </header>
 
-        {/* Resolved to a single node rather than three conditional siblings:
-            siblings make React treat the panels as a list and ask for keys. */}
-        <div className="s-tab-body">{panels[tab]}</div>
+          {/* Resolved to a single node rather than three conditional siblings:
+              siblings make React treat the panels as a list and ask for keys. */}
+          <div className="s-tab-body">{panels[tab]}</div>
+        </main>
       </div>
     </div>
   );

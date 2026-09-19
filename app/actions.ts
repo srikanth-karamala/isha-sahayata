@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { triageFaultReport, SEVERITY_RANK } from '@/lib/triage';
 import { revalidatePath } from 'next/cache';
+import { getFleetSummary, getHubBalances, getTodayDemand } from '@/lib/analytics';
 import type { CycleStatus } from '@prisma/client';
 import type { CycleDetail, HubSummary } from '@/lib/types';
 
@@ -524,4 +525,21 @@ export async function getActiveRides() {
     updatedAt: ride.updatedAt.toISOString(),
     startedAt: ride.startedAt.toISOString(),
   }));
+}
+
+/**
+ * The slice of the dashboard that changes minute to minute, in one round trip.
+ *
+ * The overview tab is a server component, so without this its charts were
+ * frozen at the values present when the page was rendered — only the live-rides
+ * map polled. Grouping these three means the stat tiles and the demand curve
+ * move together rather than tearing against each other between intervals.
+ */
+export async function getLiveOverview() {
+  const [summary, demand, balances] = await Promise.all([
+    getFleetSummary(),
+    getTodayDemand(),
+    getHubBalances(),
+  ]);
+  return { summary, demand, balances };
 }

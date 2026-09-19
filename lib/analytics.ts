@@ -122,6 +122,31 @@ export async function getHourlyDemand(days = 14): Promise<HourlyDemand[]> {
 }
 
 /**
+ * Rides started in each hour of *today*, as whole counts.
+ *
+ * The averaged 14-day series is the right shape for planning but the wrong one
+ * for watching: dividing by 14 means a ride that just happened moves its bar by
+ * 0.07, which rounds away to nothing. Staff watching the console during a busy
+ * hour need to see the count move, so this counts today's rides directly.
+ *
+ * Hours later than now are returned as 0 rather than omitted, so the curve
+ * keeps a stable 24-point x-axis instead of rescaling as the day fills in.
+ */
+export async function getTodayDemand(): Promise<HourlyDemand[]> {
+  const rides = await prisma.ride.findMany({
+    where: { startedAt: { gte: startOfToday() } },
+    select: { startedAt: true },
+  });
+
+  const buckets = new Array(24).fill(0);
+  for (const ride of rides) {
+    buckets[ride.startedAt.getHours()]++;
+  }
+
+  return buckets.map((count, hour) => ({ hour, rides: count }));
+}
+
+/**
  * Current occupancy and recent flow direction per hub. netOutflow is measured
  * over the last 24h, which is what makes rebalancing advice actionable: a hub
  * that is low *and* draining needs cycles before one that is low but refilling.
