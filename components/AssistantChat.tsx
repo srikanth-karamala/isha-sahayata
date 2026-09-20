@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Send, AlertTriangle } from 'lucide-react';
+import { X, Send, AlertTriangle, Camera } from 'lucide-react';
 import { askAssistant, assistantNeedsSetup } from '@/app/assistant-actions';
 import type { ChatTurn } from '@/lib/ai';
 
@@ -20,6 +20,15 @@ import type { ChatTurn } from '@/lib/ai';
  * authoritative than that, hence the standing footnote about the Main Gate desk.
  */
 
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Could not read photo'));
+    reader.readAsDataURL(file);
+  });
+}
+
 const OPENERS = [
   'Which stand has cycles right now?',
   'How do I get to Biksha Hall?',
@@ -30,14 +39,24 @@ export default function AssistantChat({
   open,
   onClose,
   at,
+  userId,
+  onShowHub,
 }: {
   open: boolean;
   onClose: () => void;
   /** Rider position, when shared — lets answers carry distance and direction. */
   at?: [number, number] | null;
+  /** Who is asking, so the assistant can answer about their own ride and reports. */
+  userId?: string | null;
+  /** Called with a stand name when the answer is about one, so the map can show it. */
+  onShowHub?: (hubName: string) => void;
 }) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState('');
+  // A photo attached to the next question. Held in memory only: a picture
+  // asked about in chat is a question, not a report, so nothing is stored.
+  const [photo, setPhoto] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [provider, setProvider] = useState<string | null>(null);
   // Answered by the server, twice over: once when the panel opens, and again
@@ -79,17 +98,25 @@ export default function AssistantChat({
 
   const send = async (text: string) => {
     const question = text.trim();
-    if (!question || busy) return;
+    // A photo on its own is a question — "what is this?" — so it may be sent
+    // with no words, but never an empty message with neither.
+    if ((!question && !photo) || busy) return;
 
-    const next: ChatTurn[] = [...turns, { role: 'user', content: question }];
+    const shown = question || 'What is this?';
+    const next: ChatTurn[] = [...turns, { role: 'user', content: shown }];
+    const attached = photo;
     setTurns(next);
     setDraft('');
+    setPhoto(null);
     setBusy(true);
     try {
-      const res = await askAssistant(next, at ?? null);
+      const res = await askAssistant(next, at ?? null, userId ?? null, attached);
       setProvider(res.provider);
       setUnconfigured(res.unconfigured);
       setUnverified(res.unverified);
+      // The answer named a stand: put it on the map behind the panel, so it is
+      // already selected when the visitor closes the chat.
+      if (res.hubName) onShowHub?.(res.hubName);
       setTurns([...next, { role: 'assistant', content: res.reply }]);
     } catch {
       setTurns([
@@ -202,6 +229,22 @@ export default function AssistantChat({
         {busy && <div className="yc-assist-bot yc-assist-typing">Thinking…</div>}
       </div>
 
+      {photo && (
+        <div className="yc-assist-attach">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo} alt="Photo you are about to send" />
+          <span className="yc-body-sm flex-1">Photo attached</span>
+          <button
+            type="button"
+            onClick={() => setPhoto(null)}
+            className="yc-assist-close"
+            aria-label="Remove photo"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       <form
         className="yc-assist-compose"
         onSubmit={(e) => {
@@ -209,6 +252,34 @@ export default function AssistantChat({
           void send(draft);
         }}
       >
+        {/* Photographing a lost object beats describing it: two people rarely
+            use the same words for the same thing, and a number written on it
+            is worth more than any description. */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (!file) return;
+            try {
+              setPhoto(await readFileAsDataUrl(file));
+            } catch {
+              /* unreadable file: leave the composer as it was */
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="yc-assist-cam"
+          aria-label="Attach a photo"
+          title="Attach a photo"
+        >
+          <Camera className="w-4 h-4" />
+        </button>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -218,7 +289,7 @@ export default function AssistantChat({
         />
         <button
           type="submit"
-          disabled={!draft.trim() || busy}
+          disabled={(!draft.trim() && !photo) || busy}
           className="yc-assist-send"
           aria-label="Send"
         >

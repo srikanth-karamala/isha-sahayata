@@ -1864,6 +1864,44 @@ body {
 
 .yc-assist-send:disabled { opacity: 0.45; }
 
+/* Camera button in the composer, quieter than Send: attaching a photo is a
+   step toward asking, not the ask itself. */
+.yc-assist-cam {
+  flex: none;
+  width: 2.3rem;
+  height: 2.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--separator);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.yc-assist-cam:active { transform: scale(0.94); }
+
+/* The pending photo, shown above the composer so it is obvious what is about
+   to be sent and removable before sending. */
+.yc-assist-attach {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0.7rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--separator);
+}
+
+.yc-assist-attach img {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  flex: none;
+}
+
 .yc-assist-foot {
   padding: 0.35rem 0.9rem 0.7rem;
   font-size: 11px;

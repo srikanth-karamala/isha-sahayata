@@ -195,7 +195,13 @@ export interface ChatTurn {
 export async function askForText(
   system: string,
   history: ChatTurn[],
-  maxTokens = 600
+  maxTokens = 600,
+  /**
+   * A photo attached to the newest turn. Switches the Groq call to the vision
+   * model, which is a different model — so it is passed per call rather than
+   * set once for the conversation.
+   */
+  image?: AiImage | null
 ): Promise<AiResult<string>> {
   const provider = activeProvider();
   if (provider === 'none') return { data: null, provider };
@@ -208,7 +214,28 @@ export async function askForText(
         model: ANTHROPIC_MODEL,
         max_tokens: maxTokens,
         system,
-        messages: history.map((t) => ({ role: t.role, content: t.content })),
+        messages: history.map((t, i) =>
+          image && i === history.length - 1 && t.role === 'user'
+            ? {
+                role: t.role,
+                content: [
+                  {
+                    type: 'image' as const,
+                    source: {
+                      type: 'base64' as const,
+                      media_type: image.mediaType as
+                        | 'image/jpeg'
+                        | 'image/png'
+                        | 'image/webp'
+                        | 'image/gif',
+                      data: image.data,
+                    },
+                  },
+                  { type: 'text' as const, text: t.content },
+                ],
+              }
+            : { role: t.role, content: t.content }
+        ),
       });
       const block = response.content.find((b) => b.type === 'text');
       return {
@@ -224,12 +251,30 @@ export async function askForText(
         Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: GROQ_TEXT_MODEL,
+        model: image ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL,
         max_completion_tokens: maxTokens,
         // Low but not zero: answers should be phrased naturally while staying
         // close to the facts they are given.
         temperature: 0.3,
-        messages: [{ role: 'system', content: system }, ...history],
+        messages: [
+          { role: 'system', content: system },
+          ...history.map((t, i) =>
+            image && i === history.length - 1 && t.role === 'user'
+              ? {
+                  role: t.role,
+                  content: [
+                    { type: 'text', text: t.content },
+                    {
+                      type: 'image_url',
+                      image_url: {
+                        url: `data:${image.mediaType};base64,${image.data}`,
+                      },
+                    },
+                  ],
+                }
+              : t
+          ),
+        ],
       }),
     });
 

@@ -625,6 +625,15 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             onClose={() => setAssistantOpen(false)}
             // Live tracker position while riding, otherwise the shared one.
             at={tracker.currentPos ?? userPos}
+            userId={rider?.id ?? null}
+            onShowHub={(name) => {
+              const hub = hubs.find(
+                (h) => h.name.toLowerCase() === name.toLowerCase()
+              );
+              if (!hub) return;
+              setSelectedHubId(hub.id);
+              setTab('cycles');
+            }}
           />
         </div>
 
