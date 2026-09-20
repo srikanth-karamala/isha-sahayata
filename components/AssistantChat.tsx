@@ -29,9 +29,12 @@ const OPENERS = [
 export default function AssistantChat({
   open,
   onClose,
+  at,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Rider position, when shared — lets answers carry distance and direction. */
+  at?: [number, number] | null;
 }) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState('');
@@ -77,7 +80,7 @@ export default function AssistantChat({
     setDraft('');
     setBusy(true);
     try {
-      const res = await askAssistant(next);
+      const res = await askAssistant(next, at ?? null);
       setProvider(res.provider);
       setUnconfigured(res.unconfigured);
       setTurns([...next, { role: 'assistant', content: res.reply }]);

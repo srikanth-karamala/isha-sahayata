@@ -77,3 +77,43 @@ export function isNearHub(
   if (!from || !pos) return false;
   return haversineMeters(from, pos) <= radiusM;
 }
+
+/**
+ * Compass direction from one point to another, as a word.
+ *
+ * For the assistant rather than the map: "north-east of you" is something a
+ * visitor can act on while walking, where a bearing in degrees is not. Eight
+ * points is the right resolution — finer would imply a precision that phone
+ * GPS under tree cover does not have.
+ */
+export function compassDirection(
+  from: [number, number],
+  to: [number, number]
+): string {
+  const [lat1, lng1] = from;
+  const [lat2, lng2] = to;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLng = toRad(lng2 - lng1);
+  const y = Math.sin(dLng) * Math.cos(toRad(lat2));
+  const x =
+    Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLng);
+  const deg = (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+  const points = [
+    'north', 'north-east', 'east', 'south-east',
+    'south', 'south-west', 'west', 'north-west',
+  ];
+  return points[Math.round(deg / 45) % 8];
+}
+
+/**
+ * Rough walking time, for phrasing rather than navigation.
+ *
+ * 1.3 m/s is an unhurried walk. Deliberately coarse: the campus paths are not
+ * straight lines between coordinates, so a minute-accurate estimate would be
+ * false precision. Under a minute reads as "less than a minute" rather than
+ * "0 minutes".
+ */
+export function walkingMinutes(meters: number): number {
+  return Math.max(1, Math.round(meters / 1.3 / 60));
+}
