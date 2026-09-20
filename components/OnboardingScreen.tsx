@@ -99,9 +99,12 @@ export default function OnboardingScreen({
         ) : (
           <>
             <div className="yc-onboarding-top is-list">
-              <p className="yc-eyebrow">What is here</p>
-              <h2 className="yc-display text-[24px] mt-1.5 mb-1">
-                What Sahayata can help with
+              {/* No eyebrow: the label above the heading was saying the same
+                  thing twice. The heading carries the thread from the first
+                  screen — "Sahayata means help" — so the list reads as what
+                  that help is, offered, rather than as a list of features. */}
+              <h2 className="yc-display text-[26px] mb-1">
+                Sahayata is here for
               </h2>
 
               <ul className="yc-onboarding-list">
