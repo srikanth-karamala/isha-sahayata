@@ -1,4 +1,9 @@
-# Next session — scope agreed 20 Sep 2026
+# Next session
+
+**Status: the 20 September scope below is BUILT** — the introduction, the
+Ashram Info tab, the Ride stub and the four-tab nav all shipped that day. What
+remains is listed under "Still needed" and "Ride" below. Kept for the reasoning
+behind each decision; `HANDOFF.md` is the fuller record.
 
 Feedback received: onboarding screen, plus two new nav tabs (Ride, Ashram Info).
 Sahayata is an in-ashram app serving multiple personas (cottage residents,
@@ -11,7 +16,7 @@ poornangas, others TBC).
   them; only wording does, so build can start without.
 - **Full persona list** — cottage people and poornangas named so far.
 
-## 1. Onboarding screen
+## 1. Onboarding screen — DONE
 
 Gap: first run is Splash → IdentityGate (name + phone) → map. Nothing explains
 what Sahayata is. A first-time user lands on a map with no context.
@@ -25,7 +30,7 @@ value, people pick wrong, and it then needs a way to change later. Default to
 showing everyone everything and letting tabs sort it out. Decide once the
 stories arrive.
 
-## 2. Ride tab — shuttle / lift (NEW SERVICE)
+## 2. Ride tab — STUB SHIPPED, service still to design
 
 Confirmed as a genuinely new service, NOT a rename of Cycles and not a split of
 the existing ride flow. Buggy/shuttle timings, or requesting a lift across
@@ -38,25 +43,29 @@ Design questions still open: fixed-route timetable vs. on-demand request? Who
 drives, and do they need a staff-side console like /admin? Does a request need
 accept/assign, or is it informational only?
 
-## 3. Ashram Info tab
+## 3. Ashram Info tab — DONE (content still thin)
 
-All four confirmed in scope:
+All four shipped:
 - Timings (darshan, meals, temple, facilities)
 - Places & directions (halls, dining, medical, the address)
 - Contacts & helpdesk (medical, security, cottage support, lost property)
 - Guidelines & FAQs (dress code, conduct, newcomer questions)
 
-Note: some timings and the address already exist in the assistant's knowledge —
-check `lib/` before re-entering content by hand. Reuse, don't duplicate.
+Done: the Info tab reads `lib/ashram-knowledge.ts` directly, so it never
+duplicates the facts. Twelve of the fifteen entries there are still
+PLACEHOLDER and need confirming on site.
 
-## Build order
+## Build order — followed
 
-Onboarding (self-contained) → Ashram Info (mostly content) → Ride (needs a
-data model and its own design pass).
+Onboarding → Ashram Info → Ride stub. All three shipped 20 September, plus the
+nav restructure, a touch-target fix on the report button, and the location
+sanity check that stopped the app quoting 441 km distances.
 
 ## Housekeeping
 
 - Static ngrok domain still unreserved. Needs Srikanth in the dashboard, or an
   API key. Current URL is random and may change on any restart.
+- Vercel deployment started and deliberately paused: three accounts the night
+  before a demo was the wrong trade. `DEPLOY.md` has the plan; nothing done.
 - ngrok cannot authenticate on ashram Wi-Fi (TLS interception re-signs certs).
   Tunnel work requires the hotspot.

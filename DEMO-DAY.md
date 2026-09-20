@@ -56,8 +56,9 @@ The flow that demonstrates the most in the least time:
   the campus". Desktop browsers locate by IP address, often hundreds of
   kilometres out, so the app refuses to quote a distance it cannot trust.
   On a phone on campus, real distances appear.
-- **Most Ashram Info sections are empty.** Only two of fifteen facts have been
-  confirmed on site. Empty is deliberate — see `lib/ashram-knowledge.ts`.
+- **Most Ashram Info sections are empty.** Only three of fifteen facts are
+  shown at all; the other twelve are unconfirmed and deliberately hidden. See
+  `lib/ashram-knowledge.ts`.
 
 ## Known gaps, if asked
 

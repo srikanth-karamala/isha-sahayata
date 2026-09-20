@@ -1,21 +1,36 @@
 # Handoff — Isha Sahayata
 
 Written 19 September 2026, at the end of the session that added the AI features,
-Lost & Found, the staff console and the rename. This covers **why** things are
-the way they are and **what is still open**. For what the product does, see
-`README.md`.
+Lost & Found, the staff console and the rename. Revised 20 September, after the
+session that added the introduction, the Ashram Info and Ride tabs, and the
+location sanity check. This covers **why** things are the way they are and
+**what is still open**. For what the product does, see `README.md`.
 
 ---
 
 ## What the app is now
 
-It started as Yellow Cycle, a campus bike-share. It now carries two services:
+It started as Yellow Cycle, a campus bike-share. The bottom nav now carries
+four destinations:
 
-- **Cycles** — scan to unlock, ride, drop at any hub, report faults
+- **Cycles** — scan to unlock, ride, drop at any hub. Reporting a fault is an
+  action on this tab rather than a tab of its own: a fault is always about a
+  cycle, and five tabs left each one about 75px wide on a phone. It keeps its
+  standing as something reachable without unlocking a cycle first, which was
+  the point of promoting it out of the checkout flow originally.
+- **Ride** — shuttles and lifts. A stub, and it reads as one; see below.
 - **Lost & Found** — report what you lost, hand in what you found, and the
-  system works out which pairs describe the same object
+  system works out which pairs describe the same object.
+- **Info** — ashram timings, places, contacts and guidelines.
 
-Hence the rename: "Yellow Cycle" named one feature out of two.
+Hence the rename: "Yellow Cycle" named one feature out of four.
+
+A first run now opens on an **introduction** between the splash and the map,
+explaining what Sahayata is and listing what it can help with. Before it, a
+first-time visitor landed on a campus map with no idea what the app was for,
+and the tabs below Cycles were effectively undiscoverable. It is shown once per
+device, tracked in `localStorage` under `sahayata_onboarded_v1` — separately
+from rider identity, so clearing one does not replay the other.
 
 ---
 
@@ -138,6 +153,43 @@ and avoids running a WebGL canvas behind an opaque panel.
 
 ---
 
+## Decisions from the 20 September session
+
+**The Info tab reads `lib/ashram-knowledge.ts` rather than holding its own
+copy of the facts.** That file already existed as the assistant's source of
+truth, with a three-state `verified` field. Duplicating the content would have
+meant two places to correct when a timing changes, and a tab that could
+contradict Sahayata AI on the same question.
+
+It inherits that file's honesty rule as well: confirmed facts are stated
+plainly, `unverified` ones are shown with a visible "NOT CHECKED" chip and a
+caveat, and `PLACEHOLDER` entries are not rendered at all. **So a section can
+legitimately be empty, and that is not a bug.** An empty section says "ask at
+the desk", which is the right answer when nobody has confirmed the timing, and
+far better than a confident number that sends someone across the campus for a
+darshan that finished an hour ago. Three of fifteen facts currently clear the
+bar — two confirmed, one shown with its caveat — so most sections are empty
+today.
+
+**Ride is deliberately a stub.** The service needs its own data model —
+vehicles, stops, timings, possibly requests with an accept/assign step and a
+staff console — and three product questions answered before any of it: fixed
+timetable or on-demand; who drives; whether a request needs accepting.
+Guessing would have meant building the wrong thing twice. Both shuttle entries
+in the knowledge file are `PLACEHOLDER`, so there is no honest timetable to
+show either. When someone confirms them, they appear on that tab automatically.
+
+**No persona picker at first run.** Suggested, and resisted: it adds a decision
+before anyone sees value, people pick wrong, and it then needs a way to change
+later. Everyone sees everything and the tabs do the sorting. Worth revisiting
+only if the user stories show the flows genuinely diverge.
+
+**"Step 1 · Find a dock" and "Step 2 · Riding" are gone.** They numbered a
+journey most people do not walk in order — plenty open the app already standing
+at a stand — and there was no step 3 to make the numbering mean anything.
+
+---
+
 ## Traps that cost time
 
 **Prisma client goes stale.** After `prisma migrate`, a running dev server still
@@ -176,6 +228,39 @@ Postgres, but relevant if you open that repo.
 
 ---
 
+## Traps from the 20 September session
+
+**A distance of 441 km looked like the model hallucinating. It was not.** The
+assistant reported "Biksha Hall is 441 km south-west of you, about 5,653
+minutes walk", and the obvious suspicion was Groq. The same 441 km appeared in
+the dock list, which is computed by `lib/geo.ts` and never goes near a model —
+the assistant is handed a pre-built string and repeats it. The device had
+reported a position about 450 km away; the distance and bearing both match
+Chennai. A desktop browser, or a phone on Wi-Fi rather than GPS, will report a
+city-level location derived from an IP address and be completely confident
+about it.
+
+`isPlausibleCampusPosition()` in `lib/geo.ts` now rejects anything beyond 25 km
+of the campus, plus a swapped lat/lng and a 0,0 fix. The radius is generous on
+purpose: the campus is about 2 km across, but someone may open the app from
+Coimbatore or the airport on the way in and still want to see availability.
+**Apply it wherever a position enters a surface, not at each place a distance
+is printed** — `MainDashboard` checks once into `origin`, which is what keeps
+the dock list, header, island, drop-off and assistant agreeing with each other.
+
+The lesson that generalises: when a number looks absurd, check whether the
+same number appears somewhere the model cannot reach. It localises the fault in
+one step.
+
+**`rem` touch targets are 7% smaller than they read.** `html, body` sets
+`font-size: 15px`, not 16, so `min-height: 2.75rem` renders as 41px rather than
+the 44 it looks like — under the minimum that Apple's and WCAG's guidance
+share. Touch minimums in `globals.css` are therefore written in px. Measuring
+the live page with Playwright is what caught it; reading the stylesheet would
+not have.
+
+---
+
 ## Data
 
 Everything in the database is generated. Nothing came from a real person.
@@ -198,6 +283,23 @@ ends up parked at two small stations.
 ---
 
 ## Deployment
+
+**Today it runs from a tunnel on the developer's laptop**, not a host:
+`ngrok http 3000 --basic-auth isha:<passcode>` in front of `pnpm start`. That
+is enough for a demo and nothing more — it dies when the laptop sleeps, and the
+URL changes on restart because no static domain is reserved.
+
+**ngrok cannot authenticate on the ashram Wi-Fi.** The network intercepts TLS
+and re-signs certificates, and the agent rejects the unknown authority with
+`failed to send authentication request: tls: failed to verify certificate`.
+It sits alive holding a hostname its cloud has already released, which surfaces
+to visitors as `ERR_NGROK_3200`. A hotspot is the fix; restarting on the same
+network is not. The same interception is why the Neon dashboard is worth
+opening on a hotspot too.
+
+`DEPLOY.md` has the Vercel + Neon plan for a real URL. See `DEMO-DAY.md` for
+running the tunnel.
+
 
 See `DEPLOY.md` for the steps. Decisions taken:
 
@@ -229,6 +331,25 @@ private window.
 distributes proportionally, then the day's rides drain it. That is the
 imbalance the morning briefing exists to flag, and it does.
 
+**On a laptop, distances are hidden** and the header says "Tap to locate me on
+the campus". Desktop browsers locate by IP address, usually hundreds of
+kilometres out, and the app refuses to quote a distance from a fix it does not
+believe. On a phone on the campus, real distances appear. See the 441 km trap
+above.
+
+**Most Ashram Info sections are empty.** Only three of fifteen facts are shown
+at all (two confirmed, one carrying a "not checked" caveat); the other twelve
+are `PLACEHOLDER` and deliberately not rendered.
+Filling them needs someone with a notepad at the noticeboards, not a code
+change — `lib/ashram-knowledge.ts` says how.
+
+**The introduction may appear on every launch.** That is demo mode:
+`NEXT_PUBLIC_ONBOARDING_ALWAYS=1` in `.env`. The screen says so at its foot
+when it is on. Remove the variable and rebuild for normal behaviour —
+`NEXT_PUBLIC_` values are inlined at build time, so a restart alone will not
+do it. Press and hold the app name for about a second to replay the
+introduction on any build.
+
 ---
 
 ## Still open
@@ -238,8 +359,21 @@ imbalance the morning briefing exists to flag, and it does.
 - **Staff access is a shared passcode**, not accounts. Fine for a pilot.
 - **Match confidence was tuned against one pair.** More examples would be needed
   to tune it properly; the current prompt may be over-fitted to bottles.
-- **17 pre-existing lint errors** in the rider UI, all from before this session.
-  Nothing added by it. `pnpm lint` to see them.
+- **The user stories and the full persona list were never received.** The
+  message describing them was cut off mid-sentence at "these user stories ca".
+  Sahayata is meant to serve several personas — cottage residents and
+  poornangas were named; there are others. The introduction's copy and the
+  Ashram Info content were written from what the app does, not from who uses
+  it, and both would sharpen once the stories arrive.
+- **Ride needs its design pass** before any code: timetable or on-demand, who
+  drives, whether a request needs accepting. Comparable in size to what Lost &
+  Found took.
+- **Twelve of fifteen ashram facts are unconfirmed placeholders.** The highest value per
+  hour of anything on this list, and it needs no code — just someone at the
+  noticeboards, editing `lib/ashram-knowledge.ts`.
+- **22 pre-existing lint problems** (17 errors, 5 warnings) in the rider UI and
+  one script, all from before these sessions. Nothing added by them — the count
+  was identical before and after. `pnpm lint` to see them.
 - **Fedra Serif is named but not shipped.** `--serif` in `globals.css` lists
   `FedraSerifAStdBook` with no `@font-face` and no font file, so Trirong (the
   Google fallback) is what actually renders. Adding the licensed files would
@@ -281,5 +415,7 @@ repository private while `ADMIN_PASSCODE` is anything real.
 | --- | --- |
 | `README.md` | What the product does and the rider/staff flows. Predates this session; still accurate on the cycles side. |
 | `RUNNING.md` | How to start the app day to day, and what to do when it will not start. Every command in it was run before being written down. |
-| `DEPLOY.md` | Getting it onto a public URL: Neon, GitHub, Vercel. Not started yet. |
+| `DEPLOY.md` | Getting it onto a public URL: Neon, GitHub, Vercel. Not started — no git remote, no accounts. Budget an hour, and do it on the hotspot. |
+| `DEMO-DAY.md` | Running a demo off the ngrok tunnel: the link, how to restart it, what to show, and what will look like a bug but is not. |
+| `NEXT-SESSION.md` | Scope agreed for the introduction and the two new tabs, and what is still needed from Srikanth. |
 | `HANDOFF.md` | This file — why things are the way they are, and what is still open. |
