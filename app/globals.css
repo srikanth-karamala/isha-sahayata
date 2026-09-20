@@ -2625,3 +2625,39 @@ body:has(.yc-phone-stage) {
     transition: none;
   }
 }
+
+/* The dock list inside the Cycles sheet. Its height was set by two Tailwind
+   max-height classes swapped on expand, which snapped while the sheet around
+   it animated — the two surfaces disagreed for the length of the gesture. */
+.yc-dock-list {
+  transition: max-height 0.35s var(--spring);
+}
+
+.yc-dock-list.is-expanded {
+  max-height: 10rem;
+}
+
+.yc-dock-list.is-peek {
+  max-height: 4.5rem;
+}
+
+/* Sections on the Ashram Info tab swapped instantly, like the main tabs did
+   before they were given a settle. Shorter here: this is a switch within one
+   panel, not a change of destination, so it should feel lighter. */
+.yc-info-section {
+  animation: yc-info-section-in 0.22s var(--spring) both;
+}
+
+@keyframes yc-info-section-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-dock-list {
+    transition: none;
+  }
+  .yc-info-section {
+    animation: none;
+  }
+}

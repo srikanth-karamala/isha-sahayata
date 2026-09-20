@@ -637,9 +637,13 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                     )}
                   </div>
 
+                  {/* The sheet around this already animates its own height;
+                      the list inside was snapping between the two sizes, so
+                      the two disagreed mid-gesture. Same curve, same duration,
+                      so they move as one surface. */}
                   <div
-                    className={`overflow-y-auto overscroll-contain divide-y divide-[var(--separator)] ${
-                      sheetExpanded ? 'max-h-40' : 'max-h-[4.5rem]'
+                    className={`yc-dock-list overflow-y-auto overscroll-contain divide-y divide-[var(--separator)] ${
+                      sheetExpanded ? 'is-expanded' : 'is-peek'
                     }`}
                   >
                     {sheetRows.map(({ hub, meters }) => {

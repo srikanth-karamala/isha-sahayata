@@ -155,7 +155,10 @@ export default function AshramInfoPanel() {
         ))}
       </div>
 
+      {/* Keyed on the section so the entry animation runs on each switch —
+          without it React reuses the node and nothing moves. */}
       <div className="yc-info-body">
+        <div className="yc-info-section" key={section}>
         {shown.length > 0 ? (
           <ul className="yc-info-list">
             {shown.map((f) => (
@@ -197,6 +200,8 @@ export default function AshramInfoPanel() {
             </ul>
           </div>
         )}
+
+        </div>
 
         <p className="yc-info-foot">
           <ExternalLink className="w-3 h-3 shrink-0 mt-[2px] opacity-55" aria-hidden />
