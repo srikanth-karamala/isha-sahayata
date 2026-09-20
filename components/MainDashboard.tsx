@@ -688,21 +688,6 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </div>
 
                 <div className="flex flex-col items-stretch gap-2 px-3">
-                  {/* Report lost its bottom-nav slot when the nav went to four
-                      service tabs. It keeps its standing as something you can
-                      reach without unlocking a cycle first — that was the whole
-                      point of promoting it — but as an action on the tab it
-                      belongs to, below the assistant rather than above it: of
-                      the two, asking for help is the more common errand. */}
-                  <button
-                    type="button"
-                    onClick={() => setReportOpen(true)}
-                    className="yc-report-link"
-                  >
-                    <Wrench className="w-4 h-4" aria-hidden />
-                    Report a broken cycle
-                  </button>
-
                   {/* Points at the scan button, which is now in the header —
                       so it names where to look. Still gated on having no saved
                       identity, so it disappears after the first ride. */}
@@ -747,6 +732,27 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               it floats over; it widens to show its name on hover or focus,
               and always carries an accessible name for anyone who never
               sees the expansion. */}
+          {/* Reporting follows the rider for the same reason the assistant
+              does: a broken cycle is noticed while walking past one, which is
+              as likely to happen while reading the Info tab as while looking
+              at the map. It sits above the assistant and is quieter, because
+              asking a question is the commoner errand of the two.
+
+              Hidden while the report form is already open, so the control
+              does not float over the panel it just opened. */}
+          {!assistantOpen && !activeRide && !reportOpen && (
+            <button
+              type="button"
+              onClick={() => setReportOpen(true)}
+              className="yc-assist-fab is-report"
+              aria-label="Report a broken cycle"
+              title="Report a broken cycle"
+            >
+              <Wrench className="w-[1.15rem] h-[1.15rem] shrink-0" aria-hidden />
+              <span className="yc-assist-fab-label">Report a broken cycle</span>
+            </button>
+          )}
+
           {!assistantOpen && !activeRide && (
             <button
               type="button"

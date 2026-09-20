@@ -2369,52 +2369,6 @@ body:has(.yc-phone-stage) {
   color: var(--muted);
 }
 
-/* Report a fault — an action on the Cycles tab since the nav went to four
-   service tabs.
-   
-   It reads as secondary to "Ask Sahayata AI" below it, because reporting is
-   occasional and should not compete with asking for help. But secondary is a
-   matter of colour and weight, not size: this is a real button with a real
-   target. It started as a bare text link at 34px tall on a transparent
-   background, which both missed the 44px minimum that Apple's and WCAG's
-   guidance share and gave no sign it could be tapped at all. On a phone, held
-   one-handed, by someone standing next to a broken cycle, that is exactly the
-   wrong place to be subtle. */
-.yc-report-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  width: 100%;
-  min-height: 46px;
-  padding: 0.7rem 1.2rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--separator);
-  background: var(--surface-2);
-  font-family: var(--sans-med);
-  font-size: 14.5px;
-  font-weight: 620;
-  letter-spacing: -0.01em;
-  color: var(--ink-2);
-  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.06);
-  transition: transform 0.2s var(--spring), background 0.2s var(--spring);
-}
-
-.yc-report-link:active {
-  transform: scale(0.97);
-  background: rgba(28, 25, 23, 0.05);
-  color: var(--ink);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .yc-report-link {
-    transition: none;
-  }
-  .yc-report-link:active {
-    transform: none;
-  }
-}
-
 /* .yc-btn-primary and .yc-btn-ghost are block buttons: an icon inside one
    wraps to its own line and drifts to the edge. These surfaces pair an icon
    with the label, so they opt into centring it. Scoped rather than applied to
@@ -2784,4 +2738,48 @@ body:has(.yc-phone-stage) {
     animation: none;
     transition: none;
   }
+}
+
+/* Report a broken cycle — the second floating control, above the assistant.
+   It follows the rider between tabs for the same reason: a broken cycle is
+   noticed while walking past one, not while looking at a particular screen.
+
+   Deliberately quieter than the assistant. Of the two, asking a question is
+   the commoner errand, and two equally loud amber circles would read as a
+   pair of equals rather than a primary and a secondary. */
+.yc-assist-fab.is-report {
+  bottom: calc(9.4rem + env(safe-area-inset-bottom, 0px));
+  height: 46px;
+  width: 46px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--separator);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 14px rgba(28, 25, 23, 0.12);
+  font-size: 13px;
+}
+
+.yc-assist-fab.is-report:hover,
+.yc-assist-fab.is-report:focus-visible {
+  /* Wider than the assistant's: the label is longer. */
+  width: 13.2rem;
+  background: #fffdf8;
+  color: var(--ink);
+}
+
+/* The touch introduction is staggered so the two do not expand at once,
+   which would read as the interface flinching rather than introducing
+   itself. This one goes first and is briefer. */
+@media (hover: none) {
+  .yc-assist-fab.is-report {
+    animation: yc-report-fab-touch-in 2.1s var(--spring) both;
+  }
+}
+
+@keyframes yc-report-fab-touch-in {
+  0%   { opacity: 0; width: 46px; transform: scale(0.8); }
+  12%  { opacity: 1; width: 13.2rem; transform: none; }
+  64%  { width: 13.2rem; }
+  100% { width: 46px; }
 }
