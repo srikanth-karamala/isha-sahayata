@@ -725,6 +725,12 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 active={tab}
                 onChange={(next) => {
                   setReportOpen(false);
+                  // The assistant panel stops short of the nav so the tabs stay
+                  // reachable while it is open. Reachable has to mean they
+                  // work: without this the tab changed underneath the panel
+                  // and the rider was left looking at a chat with a different
+                  // tab selected behind it, seemingly ignoring the tap.
+                  setAssistantOpen(false);
                   setTab(next);
                 }}
               />
@@ -745,7 +751,12 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               );
               if (!hub) return;
               setSelectedHubId(hub.id);
+              setReportOpen(false);
               setTab('cycles');
+              // Showing someone a stand on the map means letting them see it.
+              // Without this the panel stayed over the map it had just
+              // pointed at, which is the one thing the tap was asking for.
+              setAssistantOpen(false);
             }}
           />
         </div>
