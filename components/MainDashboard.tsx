@@ -688,20 +688,6 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </div>
 
                 <div className="flex flex-col items-stretch gap-2 px-3">
-                  <button
-                    type="button"
-                    onClick={() => setAssistantOpen(true)}
-                    className="yc-btn-fab is-assist self-center"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/sahayata-mark-64.png"
-                      alt=""
-                      aria-hidden="true"
-                      className="yc-sahayata-mark w-[22px] h-[22px]"
-                    />
-                    Ask Sahayata AI
-                  </button>
                   {/* Report lost its bottom-nav slot when the nav went to four
                       service tabs. It keeps its standing as something you can
                       reach without unlocking a cycle first — that was the whole
@@ -750,6 +736,35 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               />
             )}
           </div>
+
+          {/* Reachable from every tab, not just Cycles: a question about a
+              timing is most likely to occur while reading the Info tab, and
+              about a lost item while on Lost & Found. Hidden while the chat
+              itself is open, and during a ride, when returning the cycle is
+              the only thing that should be competing for attention.
+
+              Collapsed to a circle so it does not sit on top of the content
+              it floats over; it widens to show its name on hover or focus,
+              and always carries an accessible name for anyone who never
+              sees the expansion. */}
+          {!assistantOpen && !activeRide && (
+            <button
+              type="button"
+              onClick={() => setAssistantOpen(true)}
+              className="yc-assist-fab"
+              aria-label="Ask Sahayata AI"
+              title="Ask Sahayata AI"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/sahayata-mark-64.png"
+                alt=""
+                aria-hidden="true"
+                className="yc-assist-fab-mark"
+              />
+              <span className="yc-assist-fab-label">Ask Sahayata AI</span>
+            </button>
+          )}
 
           <AssistantChat
             open={assistantOpen}

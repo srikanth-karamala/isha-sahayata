@@ -2661,3 +2661,127 @@ body:has(.yc-phone-stage) {
     animation: none;
   }
 }
+
+/* ===============================================================
+   Ask Sahayata AI — the floating trigger
+   Previously a full-width button inside the Cycles sheet, so it did
+   not exist on the other three tabs. A question about a timing is
+   most likely while reading Info, and about a lost item while on
+   Lost & Found, which is exactly where it used to be missing.
+
+   Collapsed to a circle, because a permanent pill floating over the
+   content would cover the thing it is offering to explain. It widens
+   to its name on hover or focus.
+   =============================================================== */
+
+.yc-assist-fab {
+  position: absolute;
+  right: 0.85rem;
+  /* Clear of the nav bar, which is the one control it must never sit
+     over. The nav's own bottom margin respects the safe area, so this
+     follows it rather than assuming a fixed inset. */
+  bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px));
+  z-index: 44;
+
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* Circle at rest. Height and the collapsed width are the same value
+     so it is round rather than a short pill. 52px clears the 44px
+     minimum with room, since this one is tapped in passing. */
+  height: 52px;
+  width: 52px;
+  padding: 0 0.78rem;
+  overflow: hidden;
+  white-space: nowrap;
+
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe89a 0%, var(--primary-light) 60%, #fbd45e 100%);
+  color: #7a5203;
+  border: 1px solid rgba(202, 138, 4, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 6px 20px rgba(28, 25, 23, 0.16),
+    0 1px 3px rgba(120, 83, 4, 0.2);
+
+  font-family: var(--sans-med);
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+
+  transition: width 0.34s var(--spring), transform 0.22s var(--spring),
+    box-shadow 0.22s var(--spring);
+  animation: yc-assist-fab-in 0.34s var(--spring) both;
+}
+
+.yc-assist-fab-mark {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: contain;
+  /* Keeps the mark centred in the circle: the padding is sized for the
+     expanded pill, which would otherwise push it off-centre at rest. */
+  margin-left: -0.09rem;
+}
+
+.yc-assist-fab-label {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s var(--spring), transform 0.26s var(--spring);
+}
+
+/* Hover on a pointer device, focus for the keyboard. Not :active — the
+   expansion should not fire on the tap that opens the chat. */
+.yc-assist-fab:hover,
+.yc-assist-fab:focus-visible {
+  width: 11.4rem;
+}
+
+.yc-assist-fab:hover .yc-assist-fab-label,
+.yc-assist-fab:focus-visible .yc-assist-fab-label {
+  opacity: 1;
+  transform: none;
+}
+
+.yc-assist-fab:active {
+  transform: scale(0.95);
+}
+
+@keyframes yc-assist-fab-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* On a touch screen there is no hover, so the name would never show.
+   Expanded briefly on arrival, then settled back to the circle, so it
+   introduces itself once per tab without permanently covering content. */
+@media (hover: none) {
+  .yc-assist-fab {
+    animation: yc-assist-fab-touch-in 2.4s var(--spring) both;
+  }
+  .yc-assist-fab .yc-assist-fab-label {
+    animation: yc-assist-fab-label-touch 2.4s var(--spring) both;
+  }
+}
+
+@keyframes yc-assist-fab-touch-in {
+  0%   { opacity: 0; width: 52px; transform: scale(0.8); }
+  10%  { opacity: 1; width: 11.4rem; transform: none; }
+  72%  { width: 11.4rem; }
+  100% { width: 52px; }
+}
+
+@keyframes yc-assist-fab-label-touch {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  68%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-assist-fab,
+  .yc-assist-fab .yc-assist-fab-label {
+    animation: none;
+    transition: none;
+  }
+}
