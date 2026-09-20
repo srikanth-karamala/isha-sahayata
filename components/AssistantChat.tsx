@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Send, Sparkles, AlertTriangle } from 'lucide-react';
+import { X, Send, AlertTriangle } from 'lucide-react';
 import { askAssistant, assistantNeedsSetup } from '@/app/assistant-actions';
 import type { ChatTurn } from '@/lib/ai';
 
@@ -104,7 +104,16 @@ export default function AssistantChat({
     <div className="yc-assist-panel" role="dialog" aria-label="Sahayata AI">
       <header className="yc-assist-head">
         <div className="flex items-center gap-2 min-w-0">
-          <Sparkles className="w-4 h-4 shrink-0" style={{ color: 'var(--primary-dark)' }} />
+          {/* The Sahayata mark rather than a generic sparkle: a sparkle is what
+              this app puts beside any AI-written text, so reusing it here left
+              the assistant without a mark of its own. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/sahayata-mark-64.png"
+            alt=""
+            aria-hidden="true"
+            className="yc-sahayata-mark w-[18px] h-[18px] shrink-0"
+          />
           <div className="min-w-0">
             <p className="yc-assist-title">Sahayata AI</p>
             <p className="yc-assist-sub">

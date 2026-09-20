@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { QrCode, ShieldAlert, Sparkles } from 'lucide-react';
+import { QrCode, ShieldAlert } from 'lucide-react';
 import PhoneShell from './PhoneShell';
 import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
@@ -594,7 +594,13 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                     onClick={() => setAssistantOpen(true)}
                     className="yc-btn-fab is-assist"
                   >
-                    <Sparkles className="w-5 h-5" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/sahayata-mark-64.png"
+                      alt=""
+                      aria-hidden="true"
+                      className="yc-sahayata-mark w-[22px] h-[22px]"
+                    />
                     Ask Sahayata AI
                   </button>
                   {/* Points at the scan button, which is now in the header —

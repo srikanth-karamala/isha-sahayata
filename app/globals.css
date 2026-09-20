@@ -1862,6 +1862,16 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* The Sahayata AI mark — the eye with the sun, moon and third eye.
+   Baked as a dark-amber PNG rather than an SVG because it is a scanned
+   crayon drawing, and the texture of the stroke is the point; a traced
+   outline would lose it. Sized in ems at each call site so it tracks the
+   text beside it. */
+.yc-sahayata-mark {
+  object-fit: contain;
+  display: block;
+}
+
 /* ── Lost & found feed ──────────────────────────────────────────────────────
    One list in arrival order, replacing the old pairings-then-leftovers split.
    A row carries the report; a suggested partner is nested inside that row, so
