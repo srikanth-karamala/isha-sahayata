@@ -167,9 +167,9 @@ caveat, and `PLACEHOLDER` entries are not rendered at all. **So a section can
 legitimately be empty, and that is not a bug.** An empty section says "ask at
 the desk", which is the right answer when nobody has confirmed the timing, and
 far better than a confident number that sends someone across the campus for a
-darshan that finished an hour ago. Three of fifteen facts currently clear the
-bar — two confirmed, one shown with its caveat — so most sections are empty
-today.
+darshan that finished an hour ago. Two of fifteen facts currently clear the bar
+— the address, confirmed, and the temple timings, shown with their caveat — so
+most sections are empty today.
 
 **Ride is deliberately a stub.** The service needs its own data model —
 vehicles, stops, timings, possibly requests with an accept/assign step and a
@@ -337,9 +337,9 @@ kilometres out, and the app refuses to quote a distance from a fix it does not
 believe. On a phone on the campus, real distances appear. See the 441 km trap
 above.
 
-**Most Ashram Info sections are empty.** Only three of fifteen facts are shown
-at all (two confirmed, one carrying a "not checked" caveat); the other twelve
-are `PLACEHOLDER` and deliberately not rendered.
+**Most Ashram Info sections are empty.** Only two of fifteen facts are shown at
+all — the address, and the temple timings carrying a "not checked" caveat. The
+other twelve are `PLACEHOLDER` and deliberately not rendered.
 Filling them needs someone with a notepad at the noticeboards, not a code
 change — `lib/ashram-knowledge.ts` says how.
 
@@ -368,9 +368,11 @@ introduction on any build.
 - **Ride needs its design pass** before any code: timetable or on-demand, who
   drives, whether a request needs accepting. Comparable in size to what Lost &
   Found took.
-- **Twelve of fifteen ashram facts are unconfirmed placeholders.** The highest value per
-  hour of anything on this list, and it needs no code — just someone at the
+- **Twelve of fifteen ashram facts are unconfirmed placeholders**, and a
+  thirteenth (temple timings) is shown only with a caveat. The highest value
+  per hour of anything on this list, and it needs no code — just someone at the
   noticeboards, editing `lib/ashram-knowledge.ts`.
+  `ASHRAM-FACTS-TODO.md` is the checklist, grouped by where to go.
 - **22 pre-existing lint problems** (17 errors, 5 warnings) in the rider UI and
   one script, all from before these sessions. Nothing added by them — the count
   was identical before and after. `pnpm lint` to see them.
@@ -416,6 +418,7 @@ repository private while `ADMIN_PASSCODE` is anything real.
 | `README.md` | What the product does and the rider/staff flows. Predates this session; still accurate on the cycles side. |
 | `RUNNING.md` | How to start the app day to day, and what to do when it will not start. Every command in it was run before being written down. |
 | `DEPLOY.md` | Getting it onto a public URL: Neon, GitHub, Vercel. Not started — no git remote, no accounts. Budget an hour, and do it on the hotspot. |
+| `ASHRAM-FACTS-TODO.md` | The twelve unconfirmed ashram facts, grouped by which desk or noticeboard answers them. Generated from `lib/ashram-knowledge.ts`. |
 | `DEMO-DAY.md` | Running a demo off the ngrok tunnel: the link, how to restart it, what to show, and what will look like a bug but is not. |
 | `NEXT-SESSION.md` | Scope agreed for the introduction and the two new tabs, and what is still needed from Srikanth. |
 | `HANDOFF.md` | This file — why things are the way they are, and what is still open. |

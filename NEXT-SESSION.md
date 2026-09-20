@@ -53,7 +53,7 @@ All four shipped:
 
 Done: the Info tab reads `lib/ashram-knowledge.ts` directly, so it never
 duplicates the facts. Twelve of the fifteen entries there are still
-PLACEHOLDER and need confirming on site.
+PLACEHOLDER and need confirming on site; see `ASHRAM-FACTS-TODO.md`.
 
 ## Build order — followed
 
