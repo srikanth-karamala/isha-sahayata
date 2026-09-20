@@ -1,7 +1,13 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { haversineMeters, compassDirection, formatDistance, walkingMinutes } from '@/lib/geo';
+import {
+  haversineMeters,
+  compassDirection,
+  formatDistance,
+  walkingMinutes,
+  isPlausibleCampusPosition,
+} from '@/lib/geo';
 import { askForText, providerLabel, type ChatTurn } from '@/lib/ai';
 import {
   CAMPUS_LANDMARKS,
@@ -33,11 +39,18 @@ const MAX_HISTORY = 8;
  * to" — and the coordinates to answer that were already in the database,
  * surveyed, just never passed to the model.
  */
-async function liveContext(at: [number, number] | null): Promise<string> {
+async function liveContext(rawAt: [number, number] | null): Promise<string> {
   const hubs = await prisma.hub.findMany({
     include: { cycles: { select: { status: true } } },
     orderBy: { name: 'asc' },
   });
+
+  // A position hundreds of kilometres away is a bad fix, not a long walk: a
+  // desktop browser or a phone on Wi-Fi will report a city-level location
+  // derived from an IP address, with full confidence. Distances computed from
+  // one are arithmetically right and practically nonsense, so the position is
+  // dropped rather than quoted.
+  const at = isPlausibleCampusPosition(rawAt) ? rawAt : null;
 
   const withDistance = hubs.map((hub) => {
     const available = hub.cycles.filter((c) => c.status === 'AVAILABLE').length;
@@ -69,11 +82,20 @@ async function liveContext(at: [number, number] | null): Promise<string> {
     take: 15,
   });
 
+  // Telling the model the fix was discarded — rather than just withholding
+  // the distances — stops it inventing one or claiming not to know where
+  // anything is. It knows where the stands are; it only lacks the visitor.
+  const positionNote =
+    !at && rawAt
+      ? 'NOTE: the device reported a location far from the campus, so it was ignored. You do NOT know where the visitor is. Do not quote any distance or direction, and do not guess one. If they ask how far something is, say you cannot tell where they are and suggest they turn on location, or name the landmark it is next to.'
+      : null;
+
   return [
     at
       ? 'LIVE CYCLE AVAILABILITY (read just now, nearest to the visitor first):'
       : 'LIVE CYCLE AVAILABILITY (read from the database just now):',
     ...lines,
+    ...(positionNote ? ['', positionNote] : []),
     '',
     `LOST & FOUND — ${found.length} item(s) handed in and waiting to be claimed:`,
     ...(found.length

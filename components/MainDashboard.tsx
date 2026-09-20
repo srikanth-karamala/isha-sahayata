@@ -29,7 +29,14 @@ import { clearStoredRide, loadStoredRide, saveStoredRide } from '@/lib/active-ri
 import { dropOffCycle, getActiveCycleForUser, getHubs, pingRideTrack } from '@/app/actions';
 import type { CycleDetail, HubSummary } from '@/lib/types';
 import { availableCount, faultCount } from '@/lib/types';
-import { formatDistance, formatDuration, hubsForPickup, isNearHub, nearestOpenDock } from '@/lib/geo';
+import {
+  formatDistance,
+  formatDuration,
+  hubsForPickup,
+  isNearHub,
+  isPlausibleCampusPosition,
+  nearestOpenDock,
+} from '@/lib/geo';
 import SlideToConfirm from './SlideToConfirm';
 
 const MapView = dynamic(() => import('./MapView'), {
@@ -170,7 +177,17 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     return () => window.clearInterval(id);
   }, [activeRide?.qrCode, rider?.id]);
 
-  const origin = tracker.currentPos ?? userPos;
+  // A fix hundreds of kilometres from the campus is wrong, not far: a desktop
+  // browser or a phone on Wi-Fi reports a city-level location from an IP
+  // address and is completely confident about it. Everything that quotes a
+  // distance reads `origin`, so rejecting the bad fix once here keeps the dock
+  // list, the header, the island and drop-off consistent — the alternative was
+  // a dock list reading "441.0 km" for a hall a few minutes' walk away.
+  const rawOrigin = tracker.currentPos ?? userPos;
+  const origin = isPlausibleCampusPosition(rawOrigin) ? rawOrigin : null;
+  // True when we have a fix but it is not believable — worth telling the rider,
+  // since the fix being ignored is why the list is not sorted by distance.
+  const originRejected = Boolean(rawOrigin) && !origin;
   const nearbyPickup = useMemo(() => hubsForPickup(hubs, origin), [hubs, origin]);
   const nearestWithBike = nearbyPickup.find(({ hub }) => availableCount(hub) > 0) ?? null;
   const dropTarget = useMemo(() => nearestOpenDock(hubs, origin), [hubs, origin]);
@@ -210,7 +227,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     ? Number.isFinite(nearestWithBike.meters)
       ? `${nearestWithBike.hub.name.split(' ')[0]} · ${formatDistance(nearestWithBike.meters)}`
       : nearestWithBike.hub.name
-    : userPos
+    : origin
       ? 'no bikes near'
       : 'campus';
 
@@ -245,8 +262,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           }
         : {
             value: headerReady,
-            caption: userPos || tracker.currentPos ? 'near you' : 'ready',
-            detail: userPos || tracker.currentPos ? headerMeta : undefined,
+            caption: origin ? 'near you' : 'ready',
+            detail: origin ? headerMeta : undefined,
           };
 
   const confirmNearDrop = async () => {
@@ -421,7 +438,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </button>
               )}
             </div>
-            {showMap && !userPos && !tracker.currentPos && !activeRide && (
+            {showMap && !origin && !activeRide && (
               <button
                 type="button"
                 onClick={() => {
@@ -433,9 +450,16 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                     { enableHighAccuracy: true, timeout: 12000 }
                   );
                 }}
-                className="yc-glass mt-2 w-full text-left px-3.5 py-2.5 rounded-[1.1rem] text-[12px] text-[var(--ink-2)]"
+                className="yc-glass mt-2 w-full text-left px-3.5 py-2.5 rounded-[1.1rem] text-[12px] text-[var(--ink-2)] min-h-[44px]"
               >
-                Share location to sort docks by distance — tap here or use Locate.
+                {/* A rejected fix needs its own wording. "Share location" is
+                    wrong advice to someone who already shared it — the problem
+                    is that what their device reported is nowhere near the
+                    campus, which usually means a desktop browser or Wi-Fi
+                    positioning rather than a denied permission. */}
+                {originRejected
+                  ? 'Your device reports a location far from the ashram, so distances are hidden. Tap to try again on the campus.'
+                  : 'Share location to sort docks by distance — tap here or use Locate.'}
               </button>
             )}
           </header>
@@ -475,7 +499,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 />
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="yc-eyebrow">Step 2 · Riding</p>
+                    <p className="yc-eyebrow">On your ride</p>
                     <p className="yc-mono yc-title yc-title-md truncate mt-1.5">{activeRide.qrCode}</p>
                     {rider && sheetExpanded && (
                       <p className="yc-body-sm mt-1.5 truncate">
@@ -574,17 +598,23 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                   />
                   <div className="px-4 pt-1 pb-2.5 flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="yc-eyebrow">Step 1 · Find a dock</p>
-                      <p className="yc-title yc-title-sm mt-1.5 truncate">
-                        {selectedHub ? selectedHub.name : 'Nearby docks'}
+                      {/* "Step 1 of 2" was a label on a journey most people
+                          never walk in order: plenty open the app already
+                          standing at a stand, and there is no step 3 to give
+                          the numbering meaning. The heading now says what the
+                          list is instead of where you supposedly are in a
+                          sequence.
+
+                          The selected hub's count used to be repeated here and
+                          again in the row below — same name, same number, two
+                          lines apart. The row is the better of the two: it
+                          carries the distance and the fault count as well. */}
+                      <p className="yc-eyebrow">
+                        {selectedHub ? 'Selected stand' : 'Cycle stands near you'}
                       </p>
-                      {selectedHub && (
-                        <p className="yc-body-sm mt-1.5">
-                          <span className="yc-strong text-[var(--ink)]">{availableCount(selectedHub)}</span>
-                          {' '}
-                          yellow cycle{availableCount(selectedHub) === 1 ? '' : 's'} ready now
-                        </p>
-                      )}
+                      <p className="yc-title yc-title-sm mt-1.5 truncate">
+                        {selectedHub ? selectedHub.name : 'Tap a stand to see it on the map'}
+                      </p>
                     </div>
                     {selectedHub && (
                       <button
@@ -702,8 +732,10 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           <AssistantChat
             open={assistantOpen}
             onClose={() => setAssistantOpen(false)}
-            // Live tracker position while riding, otherwise the shared one.
-            at={tracker.currentPos ?? userPos}
+            // The checked position, not the raw one: a fix the screen has
+            // rejected must not reach the assistant either, or it will quote
+            // distances nothing else on screen agrees with.
+            at={origin}
             userId={rider?.id ?? null}
             onShowHub={(name) => {
               const hub = hubs.find(

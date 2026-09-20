@@ -7,6 +7,39 @@ export const CAMPUS_CENTER: [number, number] = [10.9799, 76.7369];
 /** Rider must be about this close to confirm drop-off by slide. */
 export const DROP_OFF_RADIUS_M = 75;
 
+/**
+ * How far from the campus a reported position can be and still be believed.
+ *
+ * The campus is about 2 km across, so 25 km is generous — it covers Coimbatore
+ * city and the airport, where someone might legitimately open the app on the
+ * way in and want to see what is available before they arrive.
+ *
+ * Beyond that the position is not a long walk, it is wrong. A desktop browser
+ * or a phone on Wi-Fi will happily report a city-level location hundreds of
+ * kilometres away, derived from an IP address rather than a satellite, and
+ * report it with complete confidence. Quoting a distance from such a fix
+ * produced "Biksha Hall is 441 km south-west of you, about 5,653 minutes
+ * walk" — which is arithmetically correct and useless.
+ */
+export const PLAUSIBLE_RADIUS_M = 25_000;
+
+/**
+ * Whether a reported position is close enough to the campus to be usable.
+ *
+ * Used to decide whether to quote distances at all. When this is false the
+ * honest answer is to say nothing about distance rather than to compute one
+ * from a fix that is not really where the person is standing.
+ */
+export function isPlausibleCampusPosition(pos: [number, number] | null): boolean {
+  if (!pos) return false;
+  const [lat, lng] = pos;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  // A swapped lat/lng lands outside these bounds, as does a null-island 0,0.
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;
+  if (lat === 0 && lng === 0) return false;
+  return haversineMeters(pos, CAMPUS_CENTER) <= PLAUSIBLE_RADIUS_M;
+}
+
 /** MapLibre uses [lng, lat]. App GPS uses [lat, lng]. */
 export function toLngLat(pos: [number, number]): [number, number] {
   return [pos[1], pos[0]];
