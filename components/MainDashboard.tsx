@@ -490,6 +490,14 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               showMap ? '' : ' is-full'
             }`}
           >
+            {/* Keyed so React replaces the node on a tab change rather than
+                reusing it — the entry animation only runs on a fresh node.
+                An active ride is its own key, so returning a cycle settles
+                the same way a tab does. */}
+            <div
+              className="yc-tab-panel"
+              key={activeRide ? 'riding' : reportOpen ? 'report' : tab}
+            >
             {activeRide ? (
               <div className="yc-sheet p-4" ref={slideRef}>
                 <div
@@ -717,6 +725,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </div>
               </>
             )}
+
+            </div>
 
             {/* Nav sits below the sheet; hidden during an active ride so the
                 drop-off controls stay the only thing to act on. */}

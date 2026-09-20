@@ -2521,3 +2521,107 @@ body:has(.yc-phone-stage) {
     transform: none;
   }
 }
+
+/* ===============================================================
+   Tab transitions
+   The panel content used to swap instantly on a tab change: one sheet
+   replaced by another with no transition, which is the hard cut that
+   reads as unpolished next to a native app. These give the swap a
+   short settle without implying the tabs have an order — no
+   horizontal slide, because sliding would suggest a swipe gesture
+   that does not exist here.
+   =============================================================== */
+
+.yc-tab-panel {
+  animation: yc-tab-in 0.26s var(--spring) both;
+  /* This wrapper stands where the panels used to sit as direct children of
+     the bottom stack, so it has to pass their layout through rather than
+     introduce a new box that breaks the full-height tabs. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* A full-height panel (the tabs with no map behind them) needs the wrapper to
+   grow with it, and its own sheet to keep scrolling. */
+.yc-bottom-stack.is-full > .yc-tab-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.yc-bottom-stack.is-full > .yc-tab-panel > .yc-sheet {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+@keyframes yc-tab-in {
+  from {
+    opacity: 0;
+    /* Downward, so the panel settles up into place. A few pixels is
+       enough — more reads as a page transition rather than a swap. */
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The selected tab's amber fill used to vanish from one button and
+   appear on another. This moves it, which is the detail that reads as
+   iOS. It is a pseudo-element on the nav rather than on each button so
+   that one object travels rather than two cross-fading. */
+.yc-nav {
+  position: relative;
+}
+
+.yc-nav-pill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 1.05rem;
+  background: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(202, 138, 4, 0.55),
+    0 1px 3px rgba(120, 83, 4, 0.18);
+  transition: transform 0.34s var(--spring), width 0.34s var(--spring);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* The buttons sit above the travelling pill. */
+.yc-nav-item {
+  position: relative;
+  z-index: 1;
+}
+
+/* With the pill drawn behind, the active button no longer paints its
+   own background — otherwise two amber shapes overlap mid-travel. */
+.yc-nav-item.is-active {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* A small settle on the icon of the tab just chosen, so the selection
+   feels acknowledged rather than merely recorded. */
+.yc-nav-item.is-active svg {
+  animation: yc-nav-icon-settle 0.32s var(--spring);
+}
+
+@keyframes yc-nav-icon-settle {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-tab-panel,
+  .yc-nav-item.is-active svg {
+    animation: none;
+  }
+  .yc-nav-pill {
+    transition: none;
+  }
+}
