@@ -18,11 +18,21 @@
  *
  *  Every entry carries a `verified` field. Anything marked PLACEHOLDER is a
  *  guess and is NOT shown to visitors — `publicFacts()` filters it out, so an
- *  unverified timing is simply absent rather than wrong. Replace the value,
- *  set `verified: 'confirmed'`, and it starts being used.
+ *  unverified timing is simply absent rather than wrong. To confirm one:
  *
- *  Check these against the official noticeboards, not memory, and re-check
- *  after any seasonal change.
+ *    1. Read the real value on site, at the place named in `source`.
+ *    2. Replace `detail` with the answer, in plain sentences.
+ *    3. Set `verified: 'confirmed'` and `checked` to today's ISO date.
+ *
+ *  Check these against the official noticeboards, not memory, and not against
+ *  a web page or a language model's recollection — both go stale silently, and
+ *  a wrong timing here is worse than no timing. Re-check after any seasonal
+ *  change, and treat anything dated more than a few months back as suspect.
+ *
+ *  Two entries resist being pinned down and should usually stay PLACEHOLDER:
+ *  Ekadasi (it moves with the lunar month) and the programme schedule (it
+ *  changes monthly). Leaving them unconfirmed makes the assistant refer people
+ *  to the desk, which is the right answer for a date-dependent question.
  * ────────────────────────────────────────────────────────────────────────────
  */
 
@@ -34,6 +44,17 @@ export interface Fact {
   /** The answer, in plain sentences. */
   detail: string;
   verified: Verification;
+  /**
+   * Where to check this, and where the confirmed value came from.
+   *
+   * Recorded so a later reader can re-verify without repeating the search for
+   * the right noticeboard or desk. Seasonal entries go stale silently, and
+   * without a source there is no way to tell a checked fact from a guess that
+   * someone marked confirmed.
+   */
+  source?: string;
+  /** ISO date the value was last checked on site. Set it when confirming. */
+  checked?: string;
 }
 
 /**
@@ -45,41 +66,107 @@ export interface Fact {
  * could do.
  */
 export const ASHRAM_FACTS: Fact[] = [
+  // ── Getting here ────────────────────────────────────────────────────────
+  {
+    topic: 'How to reach the Isha Yoga Center',
+    detail:
+      'Confirm the distance and usual travel time from Coimbatore city and from Coimbatore airport and railway station, and which public buses serve the centre. Note the last bus of the day, which is what a late arrival actually needs.',
+    verified: 'PLACEHOLDER',
+    source: 'Reception desk at Main Gate; the official travel page',
+  },
+  {
+    topic: 'Arrival and registration',
+    detail:
+      'Confirm where a visitor reports on arrival, what identification is required, and whether day visitors need to register at all.',
+    verified: 'PLACEHOLDER',
+    source: 'Main Gate reception',
+  },
+
+  // ── Temple and offerings ────────────────────────────────────────────────
   {
     topic: 'Temple timings',
     detail:
-      'Confirm the current opening and closing hours, and any midday break, from the noticeboard at the temple entrance.',
+      'Confirm the current opening and closing hours of the Dhyanalinga and the Linga Bhairavi temple, and any midday break. These differ between the two and change seasonally, so record them separately with the date checked.',
     verified: 'PLACEHOLDER',
+    source: 'Noticeboard at each temple entrance',
   },
   {
-    topic: 'Daily rituals',
+    topic: 'Daily rituals and offerings',
     detail:
-      'Confirm the names and times of the daily offerings, and whether visitors may attend each one.',
+      'Confirm the names and times of the daily offerings at each temple, and whether visitors may attend each one or only observe.',
     verified: 'PLACEHOLDER',
+    source: 'Noticeboard at each temple entrance',
   },
   {
-    topic: 'Golf cart service',
+    topic: 'Ekadasi and other special days',
     detail:
-      'Confirm the hours the carts run, the route they follow, and whether a cart can be requested or only boarded at a stop.',
+      'Confirm which days in the current month are observed differently, and how timings change on them. Ekadasi falls twice a lunar month, so this needs a date-aware answer rather than a fixed one — if it cannot be kept current, leave it PLACEHOLDER so the assistant refers people to the desk instead.',
     verified: 'PLACEHOLDER',
+    source: 'Temple noticeboard; monthly programme schedule',
   },
   {
-    topic: 'Golf cart pick-up and drop-off points',
+    topic: 'Milk offering',
     detail:
-      'Confirm the list of stops and roughly how long the cart takes between them.',
+      'Confirm the timing of the milk offering, where a visitor obtains the offering, and any restriction on who may participate.',
     verified: 'PLACEHOLDER',
+    source: 'Temple noticeboard or the attending volunteer',
   },
+
+  // ── Getting around the campus ───────────────────────────────────────────
+  {
+    topic: 'Shuttle and golf cart service',
+    detail:
+      'Confirm the hours the shuttles and carts run, the route they follow, the fare if any, and whether one can be requested or only boarded at a stop.',
+    verified: 'PLACEHOLDER',
+    source: 'Main Gate desk; the shuttle stand itself',
+  },
+  {
+    topic: 'Shuttle pick-up and drop-off points',
+    detail:
+      'Confirm the list of stops and roughly how long the shuttle takes between them. The cycle stands in CAMPUS_LANDMARKS below are already accurate and can be named as landmarks alongside these.',
+    verified: 'PLACEHOLDER',
+    source: 'Main Gate desk',
+  },
+
+  // ── Staying and eating ──────────────────────────────────────────────────
   {
     topic: 'Dining timings',
     detail:
-      'Confirm the serving windows for each meal at Biksha Hall.',
+      'Confirm the serving windows for each meal at Biksha Hall, and whether day visitors eat there or elsewhere.',
     verified: 'PLACEHOLDER',
+    source: 'Noticeboard at Biksha Hall',
+  },
+  {
+    topic: 'Accommodation',
+    detail:
+      'Confirm what accommodation exists for visitors, how it is booked, and the check-in and check-out times.',
+    verified: 'PLACEHOLDER',
+    source: 'Reception; the official accommodation page',
+  },
+
+  // ── Programmes ──────────────────────────────────────────────────────────
+  {
+    topic: 'Programmes offered',
+    detail:
+      'Confirm which programmes are currently open to visitors, their duration, and how to register. Programme schedules change month to month — record the month this was checked, and prefer pointing visitors at the desk over listing dates that will expire.',
+    verified: 'PLACEHOLDER',
+    source: 'Programme desk; the official programmes page',
+  },
+
+  // ── Practical matters ───────────────────────────────────────────────────
+  {
+    topic: 'Dress code and conduct',
+    detail:
+      'Confirm what visitors are asked to wear, particularly for entering the temples, and any restriction on photography, footwear or phones.',
+    verified: 'PLACEHOLDER',
+    source: 'Noticeboard at Main Gate and temple entrances',
   },
   {
     topic: 'Accessibility',
     detail:
-      'Confirm what assistance exists for visitors who cannot walk long distances, and how to arrange it.',
+      'Confirm what assistance exists for visitors who cannot walk long distances, including wheelchair availability and step-free routes, and how to arrange it.',
     verified: 'PLACEHOLDER',
+    source: 'Main Gate reception',
   },
 ];
 
