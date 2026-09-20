@@ -7,6 +7,7 @@ import {
   Phone,
   CheckCircle2,
   AlertTriangle,
+  ImageOff,
 } from 'lucide-react';
 import { confirmMatch, getOpenFeed } from '@/app/lost-found-actions';
 
@@ -66,7 +67,14 @@ function KindTag({ kind }: { kind: string }) {
 }
 
 function Thumb({ src, alt }: { src: string | null; alt: string }) {
-  if (!src) return <div className="s-thumb s-thumb-empty" aria-hidden />;
+  // No photo: a small camera-off glyph rather than an empty grey square, which
+  // read as a broken image. Keeps rows aligned down the column either way.
+  if (!src)
+    return (
+      <div className="s-thumb s-thumb-empty" aria-hidden>
+        <ImageOff className="w-4 h-4" />
+      </div>
+    );
   return (
     // Opens full size: staff read numbers and markings off these photos.
     <a href={src} target="_blank" rel="noreferrer" className="shrink-0">
@@ -101,16 +109,34 @@ export default function LostFoundBoard({
     if (i.match) shown.add(i.match.other.id);
     return true;
   });
-  const pairable = rows.filter((i) => i.match).length;
+  // Three groups, each item in exactly one of them. Matched pairs go full
+  // width at the top: they are the finishable work, and a pairing needs the
+  // width to show both items side by side with the reason. What is left
+  // splits by side, so staff scanning for "did anyone hand in a blue bag?"
+  // read one column instead of filtering a mixed list.
+  const matched = rows.filter((i) => i.match);
+  const unmatchedLost = rows.filter((i) => !i.match && i.kind === 'LOST');
+  const unmatchedFound = rows.filter((i) => !i.match && i.kind === 'FOUND');
+
+  const confirmPair = async (item: Item) => {
+    if (!item.match) return;
+    setBusy(item.id);
+    try {
+      await confirmMatch(item.id, item.match.other.id);
+      setDone((d) => [...d, item.id, item.match!.other.id]);
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="s-h2">Open reports</h2>
         <p className="s-meta mt-0.5">
-          Newest first. {rows.length} open
-          {pairable > 0 && ` · ${pairable} with a suggested match`}
-          {claimed > 0 && ` · ${claimed} reunited so far`}.
+          {rows.length} open
+          {matched.length > 0 && ` · ${matched.length} ready to close`}
+          {claimed > 0 && ` · ${claimed} reunited so far`}. Newest first.
         </p>
       </div>
 
@@ -128,25 +154,74 @@ export default function LostFoundBoard({
       {rows.length === 0 ? (
         <p className="s-body">Nothing open. Everything reported has been closed.</p>
       ) : (
-        <ul className="s-feed">
-          {rows.map((item) => (
-            <Row
-              key={item.id}
-              item={item}
-              busy={busy === item.id}
-              onConfirm={async () => {
-                if (!item.match) return;
-                setBusy(item.id);
-                try {
-                  await confirmMatch(item.id, item.match.other.id);
-                  setDone((d) => [...d, item.id, item.match!.other.id]);
-                } finally {
-                  setBusy(null);
-                }
-              }}
-            />
-          ))}
-        </ul>
+        <>
+          {matched.length > 0 && (
+            <section className="s-card p-4">
+              <h3 className="s-h3 mb-2">
+                Ready to close
+                <span className="s-count">{matched.length}</span>
+              </h3>
+              <ul className="s-feed">
+                {matched.map((item) => (
+                  <Row
+                    key={item.id}
+                    item={item}
+                    busy={busy === item.id}
+                    onConfirm={() => void confirmPair(item)}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <div className="s-split">
+            <section className="s-card p-4">
+              <h3 className="s-h3 mb-2 flex items-center gap-1.5">
+                <PackageSearch className="w-3.5 h-3.5" aria-hidden />
+                Lost
+                <span className="s-count">{unmatchedLost.length}</span>
+              </h3>
+              {unmatchedLost.length === 0 ? (
+                <p className="s-meta">Nothing waiting.</p>
+              ) : (
+                <ul className="s-feed">
+                  {unmatchedLost.map((item) => (
+                    <Row
+                      key={item.id}
+                      item={item}
+                      busy={false}
+                      onConfirm={() => {}}
+                      showKind={false}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section className="s-card p-4">
+              <h3 className="s-h3 mb-2 flex items-center gap-1.5">
+                <HandHeart className="w-3.5 h-3.5" aria-hidden />
+                Handed in
+                <span className="s-count">{unmatchedFound.length}</span>
+              </h3>
+              {unmatchedFound.length === 0 ? (
+                <p className="s-meta">Nothing waiting.</p>
+              ) : (
+                <ul className="s-feed">
+                  {unmatchedFound.map((item) => (
+                    <Row
+                      key={item.id}
+                      item={item}
+                      busy={false}
+                      onConfirm={() => {}}
+                      showKind={false}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        </>
       )}
     </div>
   );
@@ -156,10 +231,13 @@ function Row({
   item,
   busy,
   onConfirm,
+  /** Hidden inside the Lost / Handed in columns, where the heading says it. */
+  showKind = true,
 }: {
   item: Item;
   busy: boolean;
   onConfirm: () => void;
+  showKind?: boolean;
 }) {
   const label = item.title ?? item.description;
 
@@ -175,7 +253,7 @@ function Row({
           </div>
 
           <p className="s-meta mt-1 flex items-center gap-2 flex-wrap">
-            <KindTag kind={item.kind} />
+            {showKind && <KindTag kind={item.kind} />}
             {item.reportedBy.name} · {placeOf(item)}
           </p>
 

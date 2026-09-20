@@ -1925,6 +1925,21 @@ body {
    A row carries the report; a suggested partner is nested inside that row, so
    the pairing is visibly attached to the thing it pairs rather than living in
    a separate section that reordered the page. */
+/* Lost beside Handed in on a wide screen. Staff scanning for "did anyone
+   hand in a blue bag?" read one column rather than filtering a mixed list,
+   and the console stops leaving half a monitor empty. Stacks below 1100px,
+   where two columns would each be too narrow for a row with a thumbnail. */
+.yc-staff .s-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .yc-staff .s-split { grid-template-columns: 1fr 1fr; }
+}
+
 .yc-staff .s-feed { display: flex; flex-direction: column; gap: 10px; }
 
 .yc-staff .s-feed-row {
@@ -1961,6 +1976,10 @@ body {
 .yc-staff .s-thumb-empty {
   background: var(--s-surface-2);
   border: 1px dashed var(--s-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--s-faint);
 }
 
 /* Standing notice, e.g. matching unavailable. */
