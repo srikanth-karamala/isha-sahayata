@@ -39,7 +39,18 @@ const SERVICES = [
   },
 ] as const;
 
-export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
+export default function OnboardingScreen({
+  onDone,
+  replayHint = false,
+}: {
+  onDone: () => void;
+  /**
+   * True when the app is in demo mode and this will reappear on every launch.
+   * Labelled on screen so that whoever sees it knows the repetition is a
+   * setting rather than a bug, and knows to turn it off before real use.
+   */
+  replayHint?: boolean;
+}) {
   const [step, setStep] = useState<0 | 1>(0);
 
   return (
@@ -82,6 +93,11 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
               <button type="button" onClick={onDone} className="yc-btn-ghost mt-1.5">
                 Skip
               </button>
+              {replayHint && (
+                <p className="yc-onboarding-demo">
+                  Demo mode · this introduction shows on every launch
+                </p>
+              )}
             </div>
           </>
         ) : (

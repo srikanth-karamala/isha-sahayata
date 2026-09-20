@@ -19,7 +19,12 @@ import IdentityGate from './IdentityGate';
 import DynamicIsland from './DynamicIsland';
 import useRideTracker from '@/hooks/useRideTracker';
 import { loadRiderIdentity, type RiderIdentity } from '@/lib/rider-identity';
-import { hasSeenOnboarding, markOnboardingSeen } from '@/lib/onboarding';
+import {
+  ALWAYS_SHOW_ONBOARDING,
+  hasSeenOnboarding,
+  markOnboardingSeen,
+  resetOnboarding,
+} from '@/lib/onboarding';
 import { clearStoredRide, loadStoredRide, saveStoredRide } from '@/lib/active-ride';
 import { dropOffCycle, getActiveCycleForUser, getHubs, pingRideTrack } from '@/app/actions';
 import type { CycleDetail, HubSummary } from '@/lib/types';
@@ -292,6 +297,23 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     });
   };
 
+  // Press and hold the app name for ~1.2s to show the introduction again.
+  const titleHoldRef = useRef<number | null>(null);
+
+  const startTitleHold = () => {
+    titleHoldRef.current = window.setTimeout(() => {
+      resetOnboarding();
+      setShowOnboarding(true);
+    }, 1200);
+  };
+
+  const cancelTitleHold = () => {
+    if (titleHoldRef.current !== null) {
+      window.clearTimeout(titleHoldRef.current);
+      titleHoldRef.current = null;
+    }
+  };
+
   const onSheetHandlePointerDown = (e: React.PointerEvent) => {
     sheetDragY.current = e.clientY;
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -313,6 +335,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               markOnboardingSeen();
               setShowOnboarding(false);
             }}
+            replayHint={ALWAYS_SHOW_ONBOARDING}
           />
         )}
         {/* Report and Lost & Found have nothing to do with location, so the
@@ -349,7 +372,17 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 alt="Isha Foundation"
                 className="h-10 w-10 rounded-[0.85rem] object-cover shrink-0 ring-1 ring-white/50"
               />
-              <div className="min-w-0 flex-1 pr-1">
+              {/* Press and hold the name to replay the introduction. Not a
+                  visible control: it is for whoever is showing the app, and a
+                  "see the welcome again" button would be clutter for everyone
+                  else. Works on any build, including one not in demo mode. */}
+              <div
+                className="min-w-0 flex-1 pr-1"
+                onPointerDown={startTitleHold}
+                onPointerUp={cancelTitleHold}
+                onPointerLeave={cancelTitleHold}
+                onContextMenu={(e) => e.preventDefault()}
+              >
                 <p className="yc-eyebrow">Isha Yoga Center</p>
                 <h1 className="yc-display text-[19px] truncate mt-0.5">Isha Sahayata</h1>
               </div>
