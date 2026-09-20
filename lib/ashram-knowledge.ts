@@ -202,11 +202,13 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'Dining timings',
     detail:
       'Bhiksha Hall serves brunch in three sittings, at 9:50am, 10:35am and 11:10am, and dinner at 6:50pm, 7:35pm and 8:10pm.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    // Confirmed by Srikanth on 20 September 2026 against the sittings in use.
+    verified: 'confirmed',
+    source: 'Confirmed on site, September 2026',
+    checked: '2026-09-20',
     // Note the official spelling is Bhiksha Hall; the cycle stand in
     // prisma/seed.ts is named "Biksha Hall". Worth reconciling one day.
-    // Still to ask: whether day visitors eat here or elsewhere.
+    // Still open: whether day visitors eat here or elsewhere.
   },
   {
     topic: 'Accommodation',

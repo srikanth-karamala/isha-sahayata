@@ -176,11 +176,9 @@ export default function AssistantChat({
           <div className="yc-assist-setup" role="status">
             <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
             <span>
-              <b>Setup incomplete.</b> No ashram timings have been confirmed
-              yet, so I can only answer about cycles, lost &amp; found and
-              directions. Staff: confirm the entries in{' '}
-              <code>lib/ashram-knowledge.ts</code> on site and mark them{' '}
-              <code>confirmed</code>.
+              I do not have the ashram timings yet, so I can help with cycles,
+              lost &amp; found and finding your way around. For timings, the
+              desk at Main Gate is the place to ask.
             </span>
           </div>
         )}
@@ -189,10 +187,9 @@ export default function AssistantChat({
           <div className="yc-assist-setup is-soft" role="status">
             <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
             <span>
-              Some timings here have <b>not been checked on site</b> and are
-              given with that caveat. Staff: confirm them at the noticeboards
-              and mark them <code>confirmed</code> in{' '}
-              <code>lib/ashram-knowledge.ts</code>.
+              Some of my timings are still being checked, so I will say when
+              one is not confirmed. The noticeboards on site are the final
+              word.
             </span>
           </div>
         )}
