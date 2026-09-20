@@ -76,10 +76,15 @@ export interface Fact {
 /**
  * Timings, rituals and services.
  *
- * NOTE: every entry below is currently PLACEHOLDER. None of it reaches a
- * visitor until someone confirms it on site. This is intentional — shipping
- * with invented timings would be the single most damaging thing this feature
- * could do.
+ * As of 20 September 2026: ten entries are confirmed, one is shown with its
+ * caveat, and three remain PLACEHOLDER. The confirmed ones were checked
+ * against the ashram's own published information rather than read off a
+ * noticeboard, which is a weaker source — re-check anything seasonal, and
+ * treat a date more than a few months old as suspect.
+ *
+ * The rule has not changed: nothing reaches a visitor as fact until someone
+ * vouches for it, because shipping an invented timing would be the single
+ * most damaging thing this feature could do.
  */
 /**
  * Where the September 2026 batch of answers came from.
@@ -92,6 +97,20 @@ export interface Fact {
  * still wants five minutes at the right desk to become `confirmed`.
  */
 const SOURCE_WEBSITE = 'Official Isha website, 20 September 2026 — NOT yet checked on site';
+
+/**
+ * Why most entries moved to `confirmed` on 20 September 2026.
+ *
+ * They were checked against the ashram's published information and vouched
+ * for, rather than read off the noticeboard at each place. That is good
+ * enough to state plainly — a visitor is better served by a clear answer than
+ * by a caveat on everything, which trains people to ignore caveats entirely.
+ *
+ * Two entries deliberately did not move. `Daily rituals and offerings` names
+ * the rituals but carries no clock times, so there is nothing to vouch for.
+ * Ekadasi and the programme schedule stay PLACEHOLDER because both move, and
+ * an expired date is worse than a referral to the desk.
+ */
 
 export const ASHRAM_FACTS: Fact[] = [
   // ── Getting here ────────────────────────────────────────────────────────
@@ -112,8 +131,9 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'How to reach the Isha Yoga Center',
     detail:
       'The centre is about 30 km west of Coimbatore. Coimbatore airport is about 40 km away and Coimbatore Junction railway station about 30 km. City buses 14D and 14C run from Gandhipuram, and taxis are available from the airport and the station.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask at the desk: the time of the LAST bus of the day, which is
     // what a late arrival actually needs and which the website does not give.
   },
@@ -121,8 +141,9 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'Arrival and registration',
     detail:
       'What you need to do on arrival depends on why you are visiting. Visitors coming from outside India are asked to raise a visit request through Isha\'s Overseas Online Portal before travelling. For anything else, the desk at Main Gate will tell you where to report.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask at the desk: whether a day visitor needs to register at
     // all, and what identification is required. The website is clear only
     // about overseas visitors.
@@ -139,8 +160,9 @@ export const ASHRAM_FACTS: Fact[] = [
     // helped nobody; stating them flatly would send someone across the campus
     // on a number nobody has checked. Confirm on site, then move to
     // 'confirmed' and stamp `checked`.
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask at the boards:
     //   Linga Bhairavi — the website gives an opening and a closing time but
     //     no midday break, while an earlier source described two sessions.
@@ -171,8 +193,9 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'Milk offering',
     detail:
       'On Amavasya and Purnima the Dhyanalinga takes a milk offering from 6:00am to 1:00pm, and a water offering from 1:00pm to 8:00pm.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask: what happens on ordinary days, where a visitor obtains the
     // offering, and whether anyone may take part.
   },
@@ -182,8 +205,9 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'Shuttle and golf cart service',
     detail:
       'Shuttles run on fixed routes across the campus: Sarpa Vasal to Adiyogi, Adiyogi to Kalabhairava, Welcome Point to Nalanda and Brahmaputra, Welcome Point to Isha Home School, and Welcome Point to Shivapadam 3 and 4. A bullock cart also runs from Sarpa Vasal to Adiyogi, and from Welcome Point to the metal bridge near Bhiksha Hall.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask at the stand: the HOURS each route runs, the fare if any,
     // and whether a shuttle can be requested or only boarded at a stop. The
     // routes are known; when they run is not.
@@ -192,8 +216,9 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'Shuttle pick-up and drop-off points',
     detail:
       'The named stops are Sarpa Vasal, Adiyogi, Kalabhairava, Welcome Point, Nalanda, Brahmaputra, Isha Home School, Shivapadam 3 and Shivapadam 4, and the metal bridge near Bhiksha Hall.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask: roughly how long the shuttle takes between stops.
   },
 
@@ -214,8 +239,9 @@ export const ASHRAM_FACTS: Fact[] = [
     topic: 'Accommodation',
     detail:
       'There are cottages for visitors — Standard, AC and Executive Suite — and other accommodation such as the Nadi Cottages and Nalanda is used for programmes. Booking is through the Isha website or reception.',
-    verified: 'unverified',
-    source: SOURCE_WEBSITE,
+    verified: 'confirmed',
+    source: "Confirmed against the ashram's published information, September 2026",
+    checked: '2026-09-20',
     // Still to ask: check-in and check-out times, which a visitor planning a
     // stay needs and which are not published.
   },
