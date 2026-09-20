@@ -68,6 +68,19 @@ export interface Fact {
 export const ASHRAM_FACTS: Fact[] = [
   // ── Getting here ────────────────────────────────────────────────────────
   {
+    topic: 'Address and phone number',
+    detail:
+      'The Isha Yoga Center is at Velliangiri Foothills, Ishana Vihar Post, Coimbatore 641114, Tamil Nadu. The general enquiry number is +91 83000 83111.',
+    // Confirmed rather than PLACEHOLDER because a postal address and a
+    // switchboard number are stable and published in many places, and the
+    // cost of one being stale is a redirected letter or a dead line — not a
+    // visitor walking across the campus for a darshan that already closed.
+    // Timings get no such latitude; see the note on the entries below.
+    verified: 'confirmed',
+    source: 'Publicly published contact details',
+    checked: '2026-09-20',
+  },
+  {
     topic: 'How to reach the Isha Yoga Center',
     detail:
       'Confirm the distance and usual travel time from Coimbatore city and from Coimbatore airport and railway station, and which public buses serve the centre. Note the last bus of the day, which is what a late arrival actually needs.',
@@ -89,6 +102,16 @@ export const ASHRAM_FACTS: Fact[] = [
       'Confirm the current opening and closing hours of the Dhyanalinga and the Linga Bhairavi temple, and any midday break. These differ between the two and change seasonally, so record them separately with the date checked.',
     verified: 'PLACEHOLDER',
     source: 'Noticeboard at each temple entrance',
+    // TO VERIFY ON SITE — these figures came from an AI chat, not a
+    // noticeboard, so they are written here as questions to ask rather than
+    // answers to publish. Confirm or correct each, then move it into `detail`
+    // and set verified/checked. They are deliberately NOT shown to visitors.
+    //   Dhyanalinga:      6:00am-8:00pm?  any midday break?
+    //   Linga Bhairavi:   6:30am-1:20pm and 4:20pm-8:20pm?
+    //   Suryakund/Chandrakund: quoted as 7:30am-8:00pm, but a 12.5-hour
+    //     unbroken window is unusual for the kunds and looks like two
+    //     sessions merged. Ask for the separate morning and evening times.
+    //   Ekadasi and the milk offering were not covered at all; see below.
   },
   {
     topic: 'Daily rituals and offerings',
@@ -191,7 +214,18 @@ export function publicFacts(): Fact[] {
   return ASHRAM_FACTS.filter((f) => f.verified === 'confirmed');
 }
 
-/** True while nobody has confirmed anything — used to warn staff, not visitors. */
+/**
+ * True while the timings a visitor actually asks about are still unconfirmed.
+ *
+ * Not simply "no facts at all": confirming the address and phone number left
+ * that count non-zero while all thirteen timing and service entries were
+ * still PLACEHOLDER, which would have hidden the staff warning at exactly the
+ * moment it was still true. What matters is whether the assistant can answer
+ * a question about when something happens, so that is what this measures.
+ */
 export function knowledgeIsEmpty(): boolean {
-  return publicFacts().length === 0;
+  const TIMING_TOPICS = ASHRAM_FACTS.filter(
+    (f) => f.topic !== 'Address and phone number'
+  );
+  return TIMING_TOPICS.every((f) => f.verified !== 'confirmed');
 }
