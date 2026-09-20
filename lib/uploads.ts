@@ -1,4 +1,7 @@
-import { prisma } from '@/lib/prisma';
+// Relative, not '@/': prisma/seed-history.ts reaches this module through
+// lib/triage.ts under ts-node, which does not resolve the alias. See AGENTS.md
+// and the note in lib/triage.ts loadPhoto().
+import { prisma } from './prisma';
 
 /**
  * Photo storage.

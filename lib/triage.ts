@@ -128,11 +128,31 @@ const PHOTO_MEDIA_TYPES: Record<string, 'image/jpeg' | 'image/png' | 'image/webp
 };
 
 /**
- * Load a saved fault photo for the vision call. Photos live under public/ and
- * are referenced by public path (e.g. /uploads/faults/123.jpg).
+ * Load a saved fault photo for the vision call.
+ *
+ * Photos moved from public/uploads into Postgres when the app was prepared for
+ * serverless hosting, and this function did not move with them: it tested for
+ * the old "/uploads/..." prefix and read from disk, so every real upload —
+ * which is now "/api/uploads/<id>" — failed the test and returned null. Photo
+ * triage therefore never ran once, silently, since that migration. A fault
+ * report with a photo was triaged from its words alone.
+ *
+ * The disk branch is kept because the seed writes fixture paths that way and
+ * runs with no database rows behind them.
  */
 async function loadPhoto(photoUrl: string) {
-  // Reject anything that escapes the uploads directory.
+  // Current form: bytes live in Postgres, served back by /api/uploads/<id>.
+  if (photoUrl.startsWith('/api/uploads/')) {
+    // Imported here rather than at module scope: lib/uploads.ts reaches Prisma
+    // through the '@/' alias, and prisma/seed-history.ts imports this file
+    // under ts-node, which does not resolve that alias. A static import would
+    // break `pnpm db:history` with a module-not-found error pointing at the
+    // seed rather than at the real cause.
+    const { loadUploadForAi } = await import('./uploads');
+    return loadUploadForAi(photoUrl);
+  }
+
+  // Legacy on-disk form, still produced by the seed fixtures.
   if (!photoUrl.startsWith('/uploads/')) return null;
 
   const mediaType = PHOTO_MEDIA_TYPES[path.extname(photoUrl).toLowerCase()];
