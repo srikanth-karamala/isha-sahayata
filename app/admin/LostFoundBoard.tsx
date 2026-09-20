@@ -32,8 +32,49 @@ type Row = {
   placeNote: string | null;
   occurredAt: Date;
   category: string | null;
+  photoUrl: string | null;
   reportedBy: { name: string; phone: string };
 };
+
+/**
+ * One unmatched report. Both columns render the same shape, so the markup
+ * lives here rather than being written twice and drifting apart.
+ *
+ * The photo is the reason this component exists. A description like "Deposit
+ * token" is almost useless for reuniting an object, while the photo of it
+ * carries the number painted on the token — the one detail that identifies it.
+ * Staff had no way to see that: the bytes were in the database and the row
+ * rendered as text only.
+ */
+function UnmatchedRow({ item }: { item: Row }) {
+  return (
+    <li className="py-2.5 flex gap-3" style={{ borderTop: '1px solid var(--s-line-soft)' }}>
+      {item.photoUrl && (
+        // Plain <img>: these are user photos served from the database by
+        // /api/uploads/<id>, not build-time assets, so next/image would add a
+        // loader round-trip for no benefit.
+        <a href={item.photoUrl} target="_blank" rel="noreferrer" className="shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.photoUrl}
+            alt={`Photo of ${item.title ?? 'the reported item'}`}
+            className="s-thumb"
+          />
+        </a>
+      )}
+      <div className="min-w-0">
+        <p className="s-h3">{item.title ?? item.description}</p>
+        <p className="s-meta mt-0.5">
+          {item.reportedBy.name} · {placeOf(item)} · {whenLabel(item.occurredAt)}
+        </p>
+        <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
+          <Phone className="w-3 h-3 shrink-0" />
+          {item.reportedBy.phone}
+        </a>
+      </div>
+    </li>
+  );
+}
 
 function whenLabel(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -226,21 +267,7 @@ export default function LostFoundBoard({
           ) : (
             <ul className="space-y-0">
               {unmatchedLost.map((item) => (
-                <li
-                  key={item.id}
-                  className="py-2.5"
-                  style={{ borderTop: '1px solid var(--s-line-soft)' }}
-                >
-                  <p className="s-h3">{item.title ?? item.description}</p>
-                  <p className="s-meta mt-0.5">
-                    {item.reportedBy.name} · {placeOf(item)} ·{' '}
-                    {whenLabel(item.occurredAt)}
-                  </p>
-                  <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
-                    <Phone className="w-3 h-3 shrink-0" />
-                    {item.reportedBy.phone}
-                  </a>
-                </li>
+                <UnmatchedRow key={item.id} item={item} />
               ))}
             </ul>
           )}
@@ -256,21 +283,7 @@ export default function LostFoundBoard({
           ) : (
             <ul className="space-y-0">
               {unmatchedFound.map((item) => (
-                <li
-                  key={item.id}
-                  className="py-2.5"
-                  style={{ borderTop: '1px solid var(--s-line-soft)' }}
-                >
-                  <p className="s-h3">{item.title ?? item.description}</p>
-                  <p className="s-meta mt-0.5">
-                    {item.reportedBy.name} · {placeOf(item)} ·{' '}
-                    {whenLabel(item.occurredAt)}
-                  </p>
-                  <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
-                    <Phone className="w-3 h-3 shrink-0" />
-                    {item.reportedBy.phone}
-                  </a>
-                </li>
+                <UnmatchedRow key={item.id} item={item} />
               ))}
             </ul>
           )}

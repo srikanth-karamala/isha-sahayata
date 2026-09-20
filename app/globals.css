@@ -1862,6 +1862,21 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* Thumbnail for a lost & found photo in the staff queue. Small enough that a
+   column of reports stays scannable, large enough to tell a red token from a
+   grey shawl at a glance; the full image opens in a new tab when staff need to
+   read something on it, such as a number written on the object. Fixed square
+   with object-fit so portrait phone photos do not stretch the row. */
+.yc-staff .s-thumb {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  background: var(--s-surface-2, #eef1f5);
+  border: 1px solid var(--s-line-soft);
+  display: block;
+}
+
 /* Counts ride in the heading of the thing they count, rather than in a row of
    cards above it. The row restated what the sections below already showed —
    "open · lost 3" over a list of three lost reports — and cost the pairings,
