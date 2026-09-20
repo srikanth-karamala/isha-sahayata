@@ -452,13 +452,15 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 }}
                 className="yc-glass mt-2 w-full text-left px-3.5 py-2.5 rounded-[1.1rem] text-[12px] text-[var(--ink-2)] min-h-[44px]"
               >
-                {/* A rejected fix needs its own wording. "Share location" is
-                    wrong advice to someone who already shared it — the problem
-                    is that what their device reported is nowhere near the
-                    campus, which usually means a desktop browser or Wi-Fi
-                    positioning rather than a denied permission. */}
+                {/* A rejected fix still needs its own wording, because
+                    "share location" is wrong advice for someone who already
+                    shared it. But it asks for an action rather than reporting
+                    a diagnosis: why the fix was refused is our problem, not
+                    something a visitor standing on the campus can act on, and
+                    a sentence about what the device got wrong reads as an
+                    error when nothing is actually broken. */}
                 {originRejected
-                  ? 'Your device reports a location far from the ashram, so distances are hidden. Tap to try again on the campus.'
+                  ? 'Tap to locate me on the campus'
                   : 'Share location to sort docks by distance — tap here or use Locate.'}
               </button>
             )}
