@@ -44,6 +44,10 @@ export default function AssistantChat({
   // with every reply. Whether a fact is confirmed is a server-side question,
   // and lib/ashram-knowledge.ts should not reach the client bundle to answer it.
   const [unconfigured, setUnconfigured] = useState(false);
+  // Some facts on offer have not been checked on site. Distinct from the
+  // empty state: the assistant can answer, but staff should know the answers
+  // are still carrying a caveat.
+  const [unverified, setUnverified] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,7 +65,9 @@ export default function AssistantChat({
     let cancelled = false;
     void assistantNeedsSetup()
       .then((needs) => {
-        if (!cancelled) setUnconfigured(needs);
+        if (cancelled) return;
+        setUnconfigured(needs.empty);
+        setUnverified(needs.unverified);
       })
       // A failure here is not worth surfacing: the banner is advisory, and
       // askAssistant reports the same flag with the first real answer.
@@ -83,6 +89,7 @@ export default function AssistantChat({
       const res = await askAssistant(next, at ?? null);
       setProvider(res.provider);
       setUnconfigured(res.unconfigured);
+      setUnverified(res.unverified);
       setTurns([...next, { role: 'assistant', content: res.reply }]);
     } catch {
       setTurns([
@@ -147,6 +154,18 @@ export default function AssistantChat({
               directions. Staff: confirm the entries in{' '}
               <code>lib/ashram-knowledge.ts</code> on site and mark them{' '}
               <code>confirmed</code>.
+            </span>
+          </div>
+        )}
+
+        {!unconfigured && unverified && (
+          <div className="yc-assist-setup is-soft" role="status">
+            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>
+              Some timings here have <b>not been checked on site</b> and are
+              given with that caveat. Staff: confirm them at the noticeboards
+              and mark them <code>confirmed</code> in{' '}
+              <code>lib/ashram-knowledge.ts</code>.
             </span>
           </div>
         )}

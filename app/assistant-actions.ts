@@ -6,6 +6,7 @@ import { askForText, providerLabel, type ChatTurn } from '@/lib/ai';
 import {
   CAMPUS_LANDMARKS,
   knowledgeIsEmpty,
+  hasUnverifiedFacts,
   publicFacts,
 } from '@/lib/ashram-knowledge';
 
@@ -79,8 +80,17 @@ async function liveContext(at: [number, number] | null): Promise<string> {
 function buildSystemPrompt(live: string): string {
   const facts = publicFacts();
 
+  // Facts carry their standing into the prompt. A confirmed fact and one that
+  // nobody has checked on site are both worth saying, but the visitor has to
+  // be able to tell them apart — so the model is told which is which rather
+  // than being handed a flat list it would state with equal confidence.
   const factBlock = facts.length
-    ? facts.map((f) => `- ${f.topic}: ${f.detail}`).join('\n')
+    ? facts
+        .map(
+          (f) =>
+            `- [${f.verified === 'confirmed' ? 'CONFIRMED' : 'NOT CHECKED ON SITE'}] ${f.topic}: ${f.detail}`
+        )
+        .join('\n')
     : '(No ashram timings or services have been confirmed yet. You do not know any of them.)';
 
   return `You are Sahayata AI, the assistant inside the Isha Sahayata app, which serves the campus cycle-share and lost & found.
@@ -102,6 +112,11 @@ HOW TO ANSWER
   information and suggest asking at the Main Gate desk. Do NOT guess, and do
   NOT answer from general knowledge about Isha or the Isha Yoga Center — an
   outdated timing sends someone across the campus for nothing.
+- A fact marked CONFIRMED you may state plainly. A fact marked NOT CHECKED ON
+  SITE you should still give — it is the best answer available — but always
+  add, in the same breath, that it has not been confirmed and that the desk at
+  Main Gate has the current times. Never present one as though it were the
+  other, and never drop the caveat to sound more helpful.
 - Never invent a time, a phone number, a route or a place name.
 - Be brief: two or three sentences is usually right. This is read on a phone.
 - Be warm and plain-spoken. No flowery language.
@@ -118,6 +133,8 @@ export interface AssistantReply {
   provider: string;
   /** True when no facts are confirmed yet — the UI warns staff, not visitors. */
   unconfigured: boolean;
+  /** True when some facts on offer are still unchecked on site. */
+  unverified: boolean;
 }
 
 /**
@@ -128,8 +145,11 @@ export interface AssistantReply {
  * the one still deciding what to ask, looking at an opener like "How do I get
  * to Biksha Hall?" with no sign that timings are unavailable.
  */
-export async function assistantNeedsSetup(): Promise<boolean> {
-  return knowledgeIsEmpty();
+export async function assistantNeedsSetup(): Promise<{
+  empty: boolean;
+  unverified: boolean;
+}> {
+  return { empty: knowledgeIsEmpty(), unverified: hasUnverifiedFacts() };
 }
 
 export async function askAssistant(
@@ -151,6 +171,7 @@ export async function askAssistant(
         'I cannot reach the assistant just now. For anything urgent, the desk at Main Gate can help.',
       provider: providerLabel('none'),
       unconfigured: knowledgeIsEmpty(),
+      unverified: hasUnverifiedFacts(),
     };
   }
 
@@ -158,5 +179,6 @@ export async function askAssistant(
     reply: data.trim(),
     provider: providerLabel(provider),
     unconfigured: knowledgeIsEmpty(),
+    unverified: hasUnverifiedFacts(),
   };
 }

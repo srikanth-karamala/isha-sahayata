@@ -1896,6 +1896,15 @@ body {
 
 .yc-assist-setup svg { flex: none; margin-top: 1px; }
 
+/* The softer variant: the assistant can answer, the answers just carry a
+   caveat. Quieter than the empty-knowledge banner because it reports a
+   working state rather than a blocked one. */
+.yc-assist-setup.is-soft {
+  background: var(--surface-2);
+  border-color: var(--separator);
+  color: var(--muted);
+}
+
 .yc-assist-setup b {
   font-weight: 700;
   letter-spacing: 0.01em;

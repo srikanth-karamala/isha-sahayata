@@ -36,7 +36,23 @@
  * ────────────────────────────────────────────────────────────────────────────
  */
 
-export type Verification = 'confirmed' | 'PLACEHOLDER';
+/**
+ * How much weight a fact can carry.
+ *
+ *  confirmed   — read off a noticeboard or desk on site. Stated plainly.
+ *  unverified  — a plausible value from a source that is not the ashram
+ *                itself. Shown, but always with a caveat telling the visitor
+ *                to check before relying on it.
+ *  PLACEHOLDER — no value at all, only a note on what to go and ask.
+ *                Never reaches a visitor.
+ *
+ * `unverified` exists because the two-state version forced a bad choice:
+ * either publish an unchecked timing as fact, or withhold the only answer
+ * available and leave the assistant useless for the questions people most
+ * often ask. A hedged answer is more useful than silence and more honest
+ * than a confident one.
+ */
+export type Verification = 'confirmed' | 'unverified' | 'PLACEHOLDER';
 
 export interface Fact {
   /** What a visitor would actually ask. */
@@ -99,19 +115,21 @@ export const ASHRAM_FACTS: Fact[] = [
   {
     topic: 'Temple timings',
     detail:
-      'Confirm the current opening and closing hours of the Dhyanalinga and the Linga Bhairavi temple, and any midday break. These differ between the two and change seasonally, so record them separately with the date checked.',
-    verified: 'PLACEHOLDER',
-    source: 'Noticeboard at each temple entrance',
-    // TO VERIFY ON SITE — these figures came from an AI chat, not a
-    // noticeboard, so they are written here as questions to ask rather than
-    // answers to publish. Confirm or correct each, then move it into `detail`
-    // and set verified/checked. They are deliberately NOT shown to visitors.
-    //   Dhyanalinga:      6:00am-8:00pm?  any midday break?
-    //   Linga Bhairavi:   6:30am-1:20pm and 4:20pm-8:20pm?
-    //   Suryakund/Chandrakund: quoted as 7:30am-8:00pm, but a 12.5-hour
-    //     unbroken window is unusual for the kunds and looks like two
-    //     sessions merged. Ask for the separate morning and evening times.
-    //   Ekadasi and the milk offering were not covered at all; see below.
+      'The Dhyanalinga is generally open from about 6:00am to 8:00pm. The Linga Bhairavi temple is generally open about 6:30am to 1:20pm and again from about 4:20pm to 8:20pm. Both can change seasonally and on special days.',
+    // Published with a caveat rather than as fact: these came from a general
+    // source, not from the noticeboard at the temple. Withholding them left
+    // the assistant unable to answer the question visitors ask most, which
+    // helped nobody; stating them flatly would send someone across the campus
+    // on a number nobody has checked. Confirm on site, then move to
+    // 'confirmed' and stamp `checked`.
+    verified: 'unverified',
+    source: 'General published information — NOT yet checked on site',
+    // Still to ask at the boards:
+    //   Dhyanalinga — is there a midday break?
+    //   Suryakund / Chandrakund — quoted elsewhere as one 7:30am-8:00pm
+    //     window, but 12.5 unbroken hours is unusual for the kunds and reads
+    //     like two sessions merged. Deliberately left out until someone can
+    //     give the separate morning and evening times.
   },
   {
     topic: 'Daily rituals and offerings',
@@ -209,9 +227,14 @@ export const CAMPUS_LANDMARKS = [
   'Sivapadam 2 — 15 docks, at the north end of the campus',
 ] as const;
 
-/** Only the facts a human has actually confirmed. */
+/** Everything the assistant may repeat — confirmed outright or hedged. */
 export function publicFacts(): Fact[] {
-  return ASHRAM_FACTS.filter((f) => f.verified === 'confirmed');
+  return ASHRAM_FACTS.filter((f) => f.verified !== 'PLACEHOLDER');
+}
+
+/** True when at least one fact on offer still needs checking on site. */
+export function hasUnverifiedFacts(): boolean {
+  return ASHRAM_FACTS.some((f) => f.verified === 'unverified');
 }
 
 /**
@@ -227,5 +250,5 @@ export function knowledgeIsEmpty(): boolean {
   const TIMING_TOPICS = ASHRAM_FACTS.filter(
     (f) => f.topic !== 'Address and phone number'
   );
-  return TIMING_TOPICS.every((f) => f.verified !== 'confirmed');
+  return TIMING_TOPICS.every((f) => f.verified === 'PLACEHOLDER');
 }
