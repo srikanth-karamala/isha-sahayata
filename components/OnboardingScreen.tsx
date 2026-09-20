@@ -70,14 +70,10 @@ export default function OnboardingScreen({
               <h1 className="yc-display text-[30px] mt-2 leading-tight">
                 Welcome to Sahayata
               </h1>
-              <p className="yc-body mt-4 max-w-[19rem]">
+              <p className="yc-body mt-4 max-w-[18rem]">
                 Sahayata means help. It is a small app for everyone living and
                 working on the campus — to get around, to find what has gone
                 missing, and to know what is happening where.
-              </p>
-              <p className="yc-body-sm mt-3 max-w-[19rem] opacity-80">
-                Nothing here needs an account. You will be asked for your name
-                and phone number once, the first time you take a cycle.
               </p>
             </div>
 
