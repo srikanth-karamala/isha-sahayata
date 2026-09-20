@@ -1862,6 +1862,57 @@ body {
   letter-spacing: 0.01em;
 }
 
+/* ── Lost & found feed ──────────────────────────────────────────────────────
+   One list in arrival order, replacing the old pairings-then-leftovers split.
+   A row carries the report; a suggested partner is nested inside that row, so
+   the pairing is visibly attached to the thing it pairs rather than living in
+   a separate section that reordered the page. */
+.yc-staff .s-feed { display: flex; flex-direction: column; gap: 10px; }
+
+.yc-staff .s-feed-row {
+  background: var(--s-surface);
+  border: 1px solid var(--s-line);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+/* The nested pairing. Inset and tinted so it reads as belonging to the row
+   above it rather than as the next report in the list. */
+.yc-staff .s-pair {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--s-surface-2);
+  border: 1px solid var(--s-line-soft);
+}
+
+/* Lost vs handed in. Never colour alone — each carries its own word and icon,
+   the same rule the severity chips follow. */
+.yc-staff .s-kind {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 7px 1px 5px; border-radius: 999px;
+  font-size: 11px; font-weight: 650; letter-spacing: .01em;
+}
+.yc-staff .s-kind-lost  { background: #fdeceb; color: #8a2a21; }
+.yc-staff .s-kind-found { background: #e8f3ec; color: #1d5b36; }
+
+.yc-staff .s-body-sm { font-size: 13px; line-height: 1.5; color: var(--s-ink-2); }
+
+/* Placeholder where a report has no photo, so rows stay aligned down the
+   list instead of the text jumping left and right. */
+.yc-staff .s-thumb-empty {
+  background: var(--s-surface-2);
+  border: 1px dashed var(--s-line);
+}
+
+/* Standing notice, e.g. matching unavailable. */
+.yc-staff .s-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 10px 12px; border-radius: 10px;
+  background: #fdf3dc; border: 1px solid rgba(138, 97, 0, .22);
+  color: #6f4e00; font-size: 12.5px; line-height: 1.45;
+}
+
 /* Thumbnail for a lost & found photo in the staff queue. Small enough that a
    column of reports stays scannable, large enough to tell a red token from a
    grey shawl at a glance; the full image opens in a new tab when staff need to

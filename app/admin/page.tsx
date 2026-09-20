@@ -6,7 +6,8 @@ import {
   getTodayDemand,
 } from '@/lib/analytics';
 import { generateBriefing } from '@/lib/briefing';
-import { getLostFoundSummary, getOpenItemsForStaff } from '@/app/lost-found-actions';
+import { getLostFoundSummary, getOpenFeed } from '@/app/lost-found-actions';
+import { activeProvider } from '@/lib/ai';
 import AdminClient from './AdminClient';
 import FleetInsights from '@/components/FleetInsights';
 import StaffConsole from './StaffConsole';
@@ -25,8 +26,7 @@ export default async function AdminPage() {
     avgDemand,
     balances,
     lfSummary,
-    lostItems,
-    foundItems,
+    feed,
   ] = await Promise.all([
     getMaintenanceCycles(),
     getHubs(),
@@ -37,8 +37,7 @@ export default async function AdminPage() {
     getHourlyDemand(),
     getHubBalances(),
     getLostFoundSummary(),
-    getOpenItemsForStaff('LOST', 20),
-    getOpenItemsForStaff('FOUND', 20),
+    getOpenFeed(40),
   ]);
 
   // Depends on the aggregates above, so it runs after them.
@@ -69,9 +68,9 @@ export default async function AdminPage() {
       }
       lostFound={
         <LostFoundBoard
-          summary={lfSummary}
-          openLostItems={lostItems}
-          openFoundItems={foundItems}
+          feed={feed}
+          claimed={lfSummary.claimed}
+          aiAvailable={activeProvider() !== 'none'}
         />
       }
     />

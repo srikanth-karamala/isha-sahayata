@@ -1,80 +1,41 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, PackageSearch, HandHeart, CheckCircle2, Link2, Phone } from 'lucide-react';
-import { confirmMatch, getLostFoundSummary } from '@/app/lost-found-actions';
+import {
+  PackageSearch,
+  HandHeart,
+  Phone,
+  CheckCircle2,
+  AlertTriangle,
+} from 'lucide-react';
+import { confirmMatch, getOpenFeed } from '@/app/lost-found-actions';
 
 /**
  * Lost and found, staff view.
  *
- * The page answers two questions in order, and nothing else:
+ * One list, newest first, and nothing else.
  *
- *   1. What can I close right now?  — the suggested pairings.
- *   2. What is still unmatched?     — everything the matcher found no partner
- *                                     for, which is where a human has to look.
+ * The previous version split the page in two: suggested pairings at the top,
+ * then everything the matcher could not pair below. That made a report move
+ * between sections depending on whether a match happened to exist, so "what
+ * just came in?" — the question staff actually open this page with — could not
+ * be answered by looking in one place. It also meant the newest report could
+ * sit at the bottom of the page.
  *
- * It used to list every open report underneath the pairings as well, which
- * meant two thirds of the page was a second copy of what was already above:
- * of nine open reports, six were already shown inside a pairing. Repeating
- * them made the page look busier than the work actually is, and buried the
- * three items that genuinely needed attention among six that did not.
+ * Now every open report is one row in arrival order, and a suggested partner
+ * hangs off the row it belongs to. A row is either actionable (it has a
+ * pairing, so there is a button) or it is not (a person has to look). That is
+ * the whole model.
  *
- * So the lists below now exclude anything already paired above. If an item
- * appears twice on this page, that is a bug.
+ * Matching is AI-only by choice. Word-overlap scoring used to fill this page
+ * with suggestions like "same category, 1 matching word" at 43%, which look
+ * like findings but tell staff nothing the two descriptions side by side do
+ * not. When the model cannot be reached, no suggestion is stored and the row
+ * simply says so.
  */
 
-type Summary = Awaited<ReturnType<typeof getLostFoundSummary>>;
-type Row = {
-  id: string;
-  title: string | null;
-  description: string;
-  hub: { name: string } | null;
-  placeNote: string | null;
-  occurredAt: Date;
-  category: string | null;
-  photoUrl: string | null;
-  reportedBy: { name: string; phone: string };
-};
-
-/**
- * One unmatched report. Both columns render the same shape, so the markup
- * lives here rather than being written twice and drifting apart.
- *
- * The photo is the reason this component exists. A description like "Deposit
- * token" is almost useless for reuniting an object, while the photo of it
- * carries the number painted on the token — the one detail that identifies it.
- * Staff had no way to see that: the bytes were in the database and the row
- * rendered as text only.
- */
-function UnmatchedRow({ item }: { item: Row }) {
-  return (
-    <li className="py-2.5 flex gap-3" style={{ borderTop: '1px solid var(--s-line-soft)' }}>
-      {item.photoUrl && (
-        // Plain <img>: these are user photos served from the database by
-        // /api/uploads/<id>, not build-time assets, so next/image would add a
-        // loader round-trip for no benefit.
-        <a href={item.photoUrl} target="_blank" rel="noreferrer" className="shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.photoUrl}
-            alt={`Photo of ${item.title ?? 'the reported item'}`}
-            className="s-thumb"
-          />
-        </a>
-      )}
-      <div className="min-w-0">
-        <p className="s-h3">{item.title ?? item.description}</p>
-        <p className="s-meta mt-0.5">
-          {item.reportedBy.name} · {placeOf(item)} · {whenLabel(item.occurredAt)}
-        </p>
-        <a className="s-contact mt-1" href={`tel:${item.reportedBy.phone}`}>
-          <Phone className="w-3 h-3 shrink-0" />
-          {item.reportedBy.phone}
-        </a>
-      </div>
-    </li>
-  );
-}
+type Feed = Awaited<ReturnType<typeof getOpenFeed>>;
+type Item = Feed[number];
 
 function whenLabel(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -85,211 +46,202 @@ function whenLabel(date: Date | string) {
   return days === 1 ? 'yesterday' : `${days}d ago`;
 }
 
-function placeOf(item: { hub: { name: string } | null; placeNote: string | null }) {
-  return item.hub?.name ?? item.placeNote ?? 'Location not given';
+function placeOf(i: { hub: { name: string } | null; placeNote: string | null }) {
+  return i.hub?.name ?? i.placeNote ?? 'place not given';
+}
+
+/** Lost and handed-in read differently at a glance, so they are marked. */
+function KindTag({ kind }: { kind: string }) {
+  const lost = kind === 'LOST';
+  return (
+    <span className={`s-kind ${lost ? 's-kind-lost' : 's-kind-found'}`}>
+      {lost ? (
+        <PackageSearch className="w-3 h-3" aria-hidden />
+      ) : (
+        <HandHeart className="w-3 h-3" aria-hidden />
+      )}
+      {lost ? 'Lost' : 'Handed in'}
+    </span>
+  );
+}
+
+function Thumb({ src, alt }: { src: string | null; alt: string }) {
+  if (!src) return <div className="s-thumb s-thumb-empty" aria-hidden />;
+  return (
+    // Opens full size: staff read numbers and markings off these photos.
+    <a href={src} target="_blank" rel="noreferrer" className="shrink-0">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className="s-thumb" />
+    </a>
+  );
 }
 
 export default function LostFoundBoard({
-  summary,
-  openLostItems,
-  openFoundItems,
+  feed,
+  claimed,
+  aiAvailable,
 }: {
-  summary: Summary;
-  openLostItems: Row[];
-  openFoundItems: Row[];
+  feed: Feed;
+  claimed: number;
+  aiAvailable: boolean;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<string[]>([]);
 
-  const matches = summary.topMatches.filter((m) => !done.includes(m.id));
-
-  // Every report already visible inside a pairing above. Confirming a pairing
-  // removes it from `matches`, so its two items reappear in the lists below
-  // until the page refetches and drops them as claimed — which is correct:
-  // for that moment they really are unhandled again.
-  const paired = new Set(matches.flatMap((m) => [m.sourceId, m.targetId]));
-
-  const unmatchedLost = openLostItems.filter((i) => !paired.has(i.id));
-  const unmatchedFound = openFoundItems.filter((i) => !paired.has(i.id));
-  const waiting = unmatchedLost.length + unmatchedFound.length;
+  // A pairing is stored in both directions so either party sees it from their
+  // side, which means a matched pair arrives here as two rows describing the
+  // same reunion. Keep the first — the feed is newest-first, so that is the
+  // side that just came in — and drop the partner's own row. Without this the
+  // page repeats every pair, the bug commit b9b6672 fixed in the old layout.
+  const shown = new Set<string>();
+  const rows = feed.filter((i) => {
+    if (done.includes(i.id) || (i.match && done.includes(i.match.other.id))) return false;
+    if (shown.has(i.id)) return false;
+    shown.add(i.id);
+    if (i.match) shown.add(i.match.other.id);
+    return true;
+  });
+  const pairable = rows.filter((i) => i.match).length;
 
   return (
-    <div className="space-y-5">
-      {/* The AI's actual job on this page: proposing pairings. */}
-      <section className="s-card p-5">
-        <div className="flex items-start gap-2 mb-1">
-          <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--s-accent)' }} />
-          <div>
-            <h2 className="s-h2">
-              Suggested reunions
-              {matches.length > 0 && (
-                <span className="s-count">{matches.length}</span>
-              )}
-            </h2>
-            <p className="s-meta mt-0.5">
-              Every open report is read and scored for which lost and handed-in
-              descriptions look like the same object. Confirming closes both.
-              {summary.claimed > 0 &&
-                ` ${summary.claimed} reunited so far.`}
-            </p>
-          </div>
-        </div>
-
-        {matches.length === 0 ? (
-          <p className="s-body mt-4">
-            No pairings above the confidence threshold right now.
-          </p>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {matches.map((match) => {
-              const strong = match.score >= 85;
-              return (
-                <div
-                  key={match.id}
-                  className="s-card p-4"
-                  style={{ background: 'var(--s-surface-2)' }}
-                >
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span
-                      className={`s-chip ${strong ? 's-chip-good' : 's-chip-neutral'}`}
-                    >
-                      {match.score}% match
-                    </span>
-                    <span className="s-meta">
-                      {match.byAi ? 'Scored by AI' : 'Offline rules'}
-                    </span>
-                  </div>
-
-                  <div className="grid md:grid-cols-[1fr_auto_1fr] gap-3 items-center">
-                    <div>
-                      <p className="s-eyebrow flex items-center gap-1.5">
-                        <PackageSearch className="w-3 h-3" />
-                        Reported lost
-                      </p>
-                      <p className="s-h3 mt-1.5">
-                        {match.source.title ?? match.source.description}
-                      </p>
-                      <p className="s-meta mt-1">
-                        {match.source.reportedBy.name} · {placeOf(match.source)} ·{' '}
-                        {whenLabel(match.source.occurredAt)}
-                      </p>
-                      {/* The number is the point of the pairing: staff have to
-                          ring the owner to arrange the handover. */}
-                      <a
-                        className="s-contact mt-1.5"
-                        href={`tel:${match.source.reportedBy.phone}`}
-                      >
-                        <Phone className="w-3 h-3 shrink-0" />
-                        {match.source.reportedBy.phone}
-                      </a>
-                    </div>
-
-                    <Link2
-                      className="w-4 h-4 mx-auto hidden md:block"
-                      style={{ color: 'var(--s-faint)' }}
-                    />
-
-                    <div>
-                      <p className="s-eyebrow flex items-center gap-1.5">
-                        <HandHeart className="w-3 h-3" />
-                        Handed in
-                      </p>
-                      <p className="s-h3 mt-1.5">
-                        {match.target.title ?? match.target.description}
-                      </p>
-                      <p className="s-meta mt-1">
-                        {match.target.reportedBy.name} · {placeOf(match.target)} ·{' '}
-                        {whenLabel(match.target.occurredAt)}
-                      </p>
-                      <a
-                        className="s-contact mt-1.5"
-                        href={`tel:${match.target.reportedBy.phone}`}
-                      >
-                        <Phone className="w-3 h-3 shrink-0" />
-                        {match.target.reportedBy.phone}
-                      </a>
-                    </div>
-                  </div>
-
-                  <p
-                    className="s-body mt-3 pt-3"
-                    style={{ borderTop: '1px solid var(--s-line)' }}
-                  >
-                    {match.reasoning}
-                  </p>
-
-                  <button
-                    type="button"
-                    disabled={busy === match.id}
-                    onClick={async () => {
-                      setBusy(match.id);
-                      try {
-                        await confirmMatch(match.sourceId, match.targetId);
-                        setDone((d) => [...d, match.id]);
-                      } finally {
-                        setBusy(null);
-                      }
-                    }}
-                    className="s-btn s-btn-primary mt-3"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    {busy === match.id ? 'Closing…' : 'Confirm reunion'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Everything the matcher could not pair. This is the queue a human has
-          to work through, so it is framed as one thing with two columns
-          rather than two independent lists of "all reports". */}
-      <section className="s-card p-5">
-        <h2 className="s-h2">
-          Still unmatched
-          {waiting > 0 && <span className="s-count">{waiting}</span>}
-        </h2>
-        <p className="s-meta mt-0.5 mb-4">
-          {waiting === 0
-            ? 'Nothing is waiting — every open report has a suggested pairing above.'
-            : `${waiting} report${waiting === 1 ? '' : 's'} with no likely pairing yet. These need a person to look.`}
+    <div className="space-y-4">
+      <div>
+        <h2 className="s-h2">Open reports</h2>
+        <p className="s-meta mt-0.5">
+          Newest first. {rows.length} open
+          {pairable > 0 && ` · ${pairable} with a suggested match`}
+          {claimed > 0 && ` · ${claimed} reunited so far`}.
         </p>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-x-6 gap-y-4">
-        <div>
-          <h3 className="s-eyebrow flex items-center gap-1.5 mb-2">
-            <PackageSearch className="w-3 h-3" />
-            Lost · {unmatchedLost.length}
-          </h3>
-          {unmatchedLost.length === 0 ? (
-            <p className="s-meta">Nothing unmatched.</p>
-          ) : (
-            <ul className="space-y-0">
-              {unmatchedLost.map((item) => (
-                <UnmatchedRow key={item.id} item={item} />
-              ))}
-            </ul>
-          )}
+      {!aiAvailable && (
+        <div className="s-note" role="status">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden />
+          <span>
+            <b>Matching is unavailable.</b> No model could be reached, so no
+            pairings are being suggested. The reports below are still complete —
+            they need reading by eye.
+          </span>
         </div>
+      )}
 
-        <div>
-          <h3 className="s-eyebrow flex items-center gap-1.5 mb-2">
-            <HandHeart className="w-3 h-3" />
-            Handed in · {unmatchedFound.length}
-          </h3>
-          {unmatchedFound.length === 0 ? (
-            <p className="s-meta">Nothing unmatched.</p>
-          ) : (
-            <ul className="space-y-0">
-              {unmatchedFound.map((item) => (
-                <UnmatchedRow key={item.id} item={item} />
-              ))}
-            </ul>
-          )}
-        </div>
-        </div>
-      </section>
+      {rows.length === 0 ? (
+        <p className="s-body">Nothing open. Everything reported has been closed.</p>
+      ) : (
+        <ul className="s-feed">
+          {rows.map((item) => (
+            <Row
+              key={item.id}
+              item={item}
+              busy={busy === item.id}
+              onConfirm={async () => {
+                if (!item.match) return;
+                setBusy(item.id);
+                try {
+                  await confirmMatch(item.id, item.match.other.id);
+                  setDone((d) => [...d, item.id, item.match!.other.id]);
+                } finally {
+                  setBusy(null);
+                }
+              }}
+            />
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function Row({
+  item,
+  busy,
+  onConfirm,
+}: {
+  item: Item;
+  busy: boolean;
+  onConfirm: () => void;
+}) {
+  const label = item.title ?? item.description;
+
+  return (
+    <li className="s-feed-row">
+      <div className="flex gap-3">
+        <Thumb src={item.photoUrl} alt={`Photo of ${label}`} />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="s-h3 min-w-0">{label}</p>
+            <span className="s-meta shrink-0">{whenLabel(item.createdAt)}</span>
+          </div>
+
+          <p className="s-meta mt-1 flex items-center gap-2 flex-wrap">
+            <KindTag kind={item.kind} />
+            {item.reportedBy.name} · {placeOf(item)}
+          </p>
+
+          {/* The description stays visible even when a title was generated
+              from it: the title is a summary, and staff matching by eye need
+              the words the person actually wrote. */}
+          {item.title && item.description !== item.title && (
+            <p className="s-body-sm mt-1">{item.description}</p>
+          )}
+
+          <a className="s-contact mt-1.5" href={`tel:${item.reportedBy.phone}`}>
+            <Phone className="w-3 h-3 shrink-0" />
+            {item.reportedBy.phone}
+          </a>
+        </div>
+      </div>
+
+      {item.match && (
+        <div className="s-pair">
+          <div className="flex items-center gap-2 mb-2">
+            <span
+              className={`s-chip ${
+                item.match.score >= 85 ? 's-chip-good' : 's-chip-neutral'
+              }`}
+            >
+              {item.match.score}% match
+            </span>
+            <span className="s-meta">Scored by AI</span>
+          </div>
+
+          <div className="flex gap-3">
+            <Thumb
+              src={item.match.other.photoUrl}
+              alt={`Photo of ${item.match.other.title ?? item.match.other.description}`}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="s-h3">
+                {item.match.other.title ?? item.match.other.description}
+              </p>
+              <p className="s-meta mt-1 flex items-center gap-2 flex-wrap">
+                <KindTag kind={item.match.other.kind} />
+                {item.match.other.reportedBy.name} · {placeOf(item.match.other)}
+              </p>
+              <a
+                className="s-contact mt-1.5"
+                href={`tel:${item.match.other.reportedBy.phone}`}
+              >
+                <Phone className="w-3 h-3 shrink-0" />
+                {item.match.other.reportedBy.phone}
+              </a>
+            </div>
+          </div>
+
+          <p className="s-body-sm mt-2">{item.match.reasoning}</p>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="s-btn s-btn-primary mt-3"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {busy ? 'Closing…' : 'Confirm reunion'}
+          </button>
+        </div>
+      )}
+    </li>
   );
 }

@@ -48,3 +48,31 @@ export async function getUpload(id: string) {
     select: { mimeType: true, bytes: true },
   });
 }
+
+/**
+ * Load a stored photo as base64, for a vision call.
+ *
+ * Takes the public URL the app stores on a row ("/api/uploads/<id>") and reads
+ * the bytes straight from Postgres rather than going back out over HTTP.
+ *
+ * This exists because the older on-disk convention outlived the move to
+ * database storage: lib/triage.ts still expects "/uploads/..." under public/,
+ * so every real upload fails its check and photo triage silently never runs.
+ * New code should use this and match on the /api/uploads/ prefix.
+ */
+export async function loadUploadForAi(
+  url: string | null | undefined
+): Promise<{ mediaType: string; data: string } | null> {
+  if (!url) return null;
+  const id = /^\/api\/uploads\/([0-9a-f-]{36})$/i.exec(url)?.[1];
+  if (!id) return null;
+
+  const row = await getUpload(id);
+  if (!row) return null;
+
+  // The vision endpoint rejects very large payloads; skip rather than fail the
+  // whole classification for one oversized photo.
+  if (row.bytes.byteLength > 4 * 1024 * 1024) return null;
+
+  return { mediaType: row.mimeType, data: Buffer.from(row.bytes).toString('base64') };
+}

@@ -50,14 +50,19 @@ export async function reportLostOrFound(input: {
   if (!user) throw new Error('Please add your name and phone first.');
 
   let photoUrl: string | null = null;
+  let photo: { mediaType: string; data: string } | null = null;
   if (input.photoDataUrl) {
-    const { saveUploadDataUrl } = await import('@/lib/uploads');
+    const { saveUploadDataUrl, loadUploadForAi } = await import('@/lib/uploads');
     photoUrl = await saveUploadDataUrl(input.photoDataUrl, 'lost-found');
+    // Read it straight back for the vision call. A found object is often
+    // described in two words ("Deposit token") while the photo carries the
+    // detail that identifies it — a number painted on the thing.
+    photo = await loadUploadForAi(photoUrl);
   }
 
-  // Claude labels the report so staff lists stay scannable; the description
-  // itself is what matching actually reads.
-  const classified = await classifyItem(description, input.kind);
+  // The model labels the report so staff lists stay scannable, and reads the
+  // photo when there is one; the description is what matching then compares.
+  const classified = await classifyItem(description, input.kind, photo);
 
   const occurredAt = input.occurredAt ? new Date(input.occurredAt) : new Date();
 
@@ -138,7 +143,9 @@ export async function runMatching(itemId: string): Promise<number> {
     candidates
   );
 
-  // Store a suggestion per direction so either party sees it from their side.
+  // Only a model's scoring is persisted. findMatches returns no matches when
+  // it could not reach one, so this loop simply does not run then, and the
+  // report stays unpaired for a person to look at.
   for (const match of outcome.matches) {
     if (match.score < 30) continue; // not worth persisting
     const pairs = [
@@ -151,13 +158,13 @@ export async function runMatching(itemId: string): Promise<number> {
         update: {
           score: match.score,
           reasoning: match.reasoning,
-          byAi: outcome.source !== 'fallback',
+          byAi: true,
         },
         create: {
           ...pair,
           score: match.score,
           reasoning: match.reasoning,
-          byAi: outcome.source !== 'fallback',
+          byAi: true,
         },
       });
     }
@@ -205,23 +212,6 @@ export async function getOpenItems(kind: LostFoundKind, limit = 30) {
   });
 }
 
-/**
- * The same list for the staff console, with the reporter's contact attached so
- * a volunteer at the desk can ring whoever filed the report. Separate from
- * getOpenItems because that one is reachable from the rider app.
- */
-export async function getOpenItemsForStaff(kind: LostFoundKind, limit = 30) {
-  return prisma.lostFoundItem.findMany({
-    where: { kind, status: LostFoundStatus.OPEN },
-    include: { hub: true, reportedBy: true },
-    // Newest submission first, by when it was filed rather than when the
-    // object was lost: a shawl lost at 01:00 and reported at 09:00 would
-    // otherwise outrank something reported since, and staff watching this
-    // page want the report that just arrived at the top.
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
-}
 
 /**
  * Mark a pair as reunited. Both reports close together — the object has one
@@ -285,4 +275,73 @@ export async function getLostFoundSummary() {
   ]);
 
   return { openLost, openFound, claimed, topMatches };
+}
+
+/**
+ * Every open report, newest first, each with its best AI-scored partner.
+ *
+ * One query for the whole staff page. The board used to be two sections —
+ * pairings, then everything the matcher could not pair — which meant a report
+ * moved between sections depending on whether a match existed, and staff had
+ * to look in two places to answer "what just came in?". Here the feed is
+ * always in arrival order and the pairing, when there is one, hangs off the
+ * report it belongs to.
+ */
+export async function getOpenFeed(limit = 40) {
+  const items = await prisma.lostFoundItem.findMany({
+    where: { status: LostFoundStatus.OPEN },
+    include: {
+      hub: true,
+      reportedBy: true,
+      matchesAsSource: {
+        where: {
+          dismissed: false,
+          score: { gte: MATCH_THRESHOLD },
+          target: { status: LostFoundStatus.OPEN },
+        },
+        orderBy: { score: 'desc' },
+        take: 1,
+        include: { target: { include: { reportedBy: true, hub: true } } },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+
+  return items.map((item) => {
+    const best = item.matchesAsSource[0];
+    return {
+      id: item.id,
+      kind: item.kind,
+      title: item.title,
+      description: item.description,
+      photoUrl: item.photoUrl,
+      category: item.category,
+      occurredAt: item.occurredAt,
+      createdAt: item.createdAt,
+      placeNote: item.placeNote,
+      hub: item.hub ? { name: item.hub.name } : null,
+      reportedBy: { name: item.reportedBy.name, phone: item.reportedBy.phone },
+      match: best
+        ? {
+            id: best.id,
+            score: best.score,
+            reasoning: best.reasoning,
+            other: {
+              id: best.target.id,
+              kind: best.target.kind,
+              title: best.target.title,
+              description: best.target.description,
+              photoUrl: best.target.photoUrl,
+              placeNote: best.target.placeNote,
+              hub: best.target.hub ? { name: best.target.hub.name } : null,
+              reportedBy: {
+                name: best.target.reportedBy.name,
+                phone: best.target.reportedBy.phone,
+              },
+            },
+          }
+        : null,
+    };
+  });
 }

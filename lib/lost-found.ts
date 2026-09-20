@@ -26,13 +26,15 @@ export interface ScoredMatch {
 
 export interface MatchOutcome {
   matches: ScoredMatch[];
-  source: 'anthropic' | 'groq' | 'fallback';
+  source: 'anthropic' | 'groq' | 'fallback' | 'unavailable';
 }
 
 export interface ClassifiedItem {
-  category: ItemCategory;
-  title: string;
-  source: 'anthropic' | 'groq' | 'fallback';
+  /** Null when no model was available to read the report. */
+  category: ItemCategory | null;
+  /** Null when no model was available; the UI falls back to the description. */
+  title: string | null;
+  source: 'anthropic' | 'groq' | 'fallback' | 'unavailable';
 }
 
 /**
@@ -59,7 +61,9 @@ const CLASSIFY_SYSTEM = `You label lost-and-found reports for the Isha Yoga Cent
 
 Give each report a category from the fixed list, and a short staff-facing title: the object itself plus its most identifying detail, at most six words, no pleasantries. "Black steel water bottle, dented" is a good title. "Lost item report" is not.
 
-Judge only from what the person wrote. Do not invent details they did not give.`;
+When a photo is attached, read it as well as the words, and put what it shows into the title: a number, a brand, a colour or a shape written on the object identifies it far better than the description usually does. A red plastic token photographed with "378" on it is "Red deposit token, no. 378", not "Deposit token".
+
+Judge only from the words and the photo. Do not invent details that are in neither.`;
 
 const MATCH_SYSTEM = `You match lost-and-found reports at the Isha Yoga Center campus.
 
@@ -116,116 +120,34 @@ const MATCH_SCHEMA = {
   additionalProperties: false,
 };
 
-const CATEGORY_KEYWORDS: [ItemCategory, string[]][] = [
-  [ItemCategory.BOTTLE, ['bottle', 'flask', 'tumbler', 'thermos', 'sipper']],
-  [ItemCategory.CLOTHING, ['shawl', 'jacket', 'scarf', 'kurta', 'dhoti', 'sweater', 'towel', 'cloth', 'angavastram']],
-  [ItemCategory.BAG, ['bag', 'backpack', 'pouch', 'rucksack', 'sack', 'purse']],
-  [ItemCategory.ELECTRONICS, ['phone', 'charger', 'earphone', 'headphone', 'laptop', 'cable', 'watch', 'camera', 'power bank']],
-  [ItemCategory.DOCUMENTS, ['id card', 'passport', 'wallet', 'card', 'ticket', 'licence', 'license', 'document']],
-  [ItemCategory.EYEWEAR, ['spectacle', 'glasses', 'sunglass', 'goggle']],
-  [ItemCategory.JEWELLERY, ['ring', 'chain', 'bracelet', 'rudraksha', 'mala', 'earring', 'bangle', 'pendant']],
-  [ItemCategory.KEYS, ['key', 'keychain', 'keys']],
-  [ItemCategory.BOOK, ['book', 'diary', 'notebook', 'journal']],
-];
 
-/** Keyword categoriser used when Claude is unavailable. */
-export function fallbackClassify(description: string): ClassifiedItem {
-  const text = description.toLowerCase();
-  let category: ItemCategory = ItemCategory.OTHER;
-
-  for (const [cat, words] of CATEGORY_KEYWORDS) {
-    if (words.some((w) => text.includes(w))) {
-      category = cat;
-      break;
-    }
-  }
-
-  const trimmed = description.trim();
-  const title = trimmed.length > 42 ? `${trimmed.slice(0, 39)}...` : trimmed;
-
-  return { category, title, source: 'fallback' };
-}
-
-const STOPWORDS = new Set([
-  'the', 'a', 'an', 'my', 'i', 'it', 'is', 'was', 'near', 'at', 'in', 'on',
-  'with', 'and', 'of', 'to', 'lost', 'found', 'have', 'has', 'left', 'one',
-  'that', 'this', 'there', 'some', 'somewhere', 'think', 'maybe',
-]);
-
-function tokens(text: string): Set<string> {
-  return new Set(
-    text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .filter((w) => w.length > 2 && !STOPWORDS.has(w))
-  );
-}
-
-/**
- * Word-overlap matcher used when Claude is unavailable. Much weaker than the
- * AI path — it cannot tell that "flask" and "bottle" are the same thing — so it
- * scores conservatively and leans on the shared category.
- */
-export function fallbackMatch(
-  subject: { description: string; category: ItemCategory | null; occurredAt: Date },
-  candidates: CandidateItem[]
-): MatchOutcome {
-  const subjectWords = tokens(subject.description);
-
-  const matches = candidates
-    .map((candidate) => {
-      const candidateWords = tokens(candidate.description);
-      let shared = 0;
-      for (const w of subjectWords) if (candidateWords.has(w)) shared++;
-
-      const union = subjectWords.size + candidateWords.size - shared;
-      const overlap = union > 0 ? shared / union : 0;
-
-      const sameCategory =
-        subject.category != null && subject.category === candidate.category;
-
-      // Weight the shared category heavily — with no semantic understanding it
-      // is the most reliable signal available.
-      let score = Math.round(overlap * 55 + (sameCategory ? 35 : 0));
-
-      // An item found before it was lost is very unlikely to be the same one.
-      const daysApart =
-        Math.abs(candidate.occurredAt.getTime() - subject.occurredAt.getTime()) /
-        86_400_000;
-      if (daysApart > 14) score = Math.round(score * 0.6);
-
-      return {
-        candidateId: candidate.id,
-        score: Math.min(score, 90),
-        reasoning: sameCategory
-          ? `Same category, ${shared} matching word${shared === 1 ? '' : 's'} in the descriptions.`
-          : `${shared} matching word${shared === 1 ? '' : 's'} in the descriptions.`,
-      };
-    })
-    .filter((m) => m.score > 25)
-    .sort((a, b) => b.score - a.score);
-
-  return { matches, source: 'fallback' };
-}
 
 /** Classify a report into a category and a short title. Never throws. */
 export async function classifyItem(
   description: string,
-  kind: LostFoundKind
+  kind: LostFoundKind,
+  /** Base64 photo, when the reporter attached one. Read alongside the words. */
+  image?: { mediaType: string; data: string } | null
 ): Promise<ClassifiedItem> {
   const text = description?.trim();
   if (!text) {
     return { category: ItemCategory.OTHER, title: 'Unspecified item', source: 'fallback' };
   }
-  if (activeProvider() === 'none') return fallbackClassify(text);
+  // No provider configured: say so rather than inventing a category. The
+  // keyword classifier is kept for the seed, which runs without a key.
+  if (activeProvider() === 'none') {
+    return { category: null, title: null, source: 'unavailable' };
+  }
 
   const { data, provider } = await askForJson<{ category: ItemCategory; title: string }>({
     system: CLASSIFY_SYSTEM,
     schemaName: 'lost_found_item',
     schema: CLASSIFY_SCHEMA,
     maxTokens: 800,
-    user: `${kind === 'LOST' ? 'Lost' : 'Found'} item report:\n\n"${text}"`,
+    image,
+    user: `${kind === 'LOST' ? 'Lost' : 'Found'} item report:\n\n"${text}"${
+      image ? '\n\nA photo of the item is attached.' : ''
+    }`,
   });
 
   if (
@@ -234,7 +156,10 @@ export async function classifyItem(
     typeof data.title !== 'string' ||
     !data.title.trim()
   ) {
-    return fallbackClassify(text);
+    // The call failed or came back malformed. Report that plainly: a keyword
+    // guess here produced titles like "Unspecified item" that staff then had
+    // to re-read the description to understand anyway.
+    return { category: null, title: null, source: 'unavailable' };
   }
 
   return {
@@ -267,8 +192,12 @@ export async function findMatches(
   },
   candidates: CandidateItem[]
 ): Promise<MatchOutcome> {
-  if (candidates.length === 0) return { matches: [], source: 'fallback' };
-  if (activeProvider() === 'none') return fallbackMatch(subject, candidates);
+  if (candidates.length === 0) return { matches: [], source: 'unavailable' };
+  // AI-only by choice. Word-overlap scoring produced suggestions like "same
+  // category, 1 matching word" at 43%, which look like findings but carry no
+  // more information than the two descriptions sitting side by side. When the
+  // model cannot be reached the page says so and a person looks manually.
+  if (activeProvider() === 'none') return { matches: [], source: 'unavailable' };
 
   const subjectPlace = subject.hubName ?? subject.placeNote ?? 'location not given';
   const opposite = subject.kind === 'LOST' ? 'found' : 'lost';
@@ -289,7 +218,7 @@ ${candidates.map(describeCandidate).join('\n')}
 Score every candidate. Return the candidateId exactly as given.`,
   });
 
-  if (!data || !Array.isArray(data.matches)) return fallbackMatch(subject, candidates);
+  if (!data || !Array.isArray(data.matches)) return { matches: [], source: 'unavailable' };
 
   // Drop anything referencing an id we did not send — a hallucinated id would
   // otherwise become a dangling suggestion row.
@@ -304,5 +233,5 @@ Score every candidate. Return the candidateId exactly as given.`,
     )
     .sort((a, b) => b.score - a.score);
 
-  return { matches, source: provider === 'none' ? 'fallback' : provider };
+  return { matches, source: provider === 'none' ? 'unavailable' : provider };
 }
