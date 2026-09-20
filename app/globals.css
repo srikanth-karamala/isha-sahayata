@@ -1067,6 +1067,41 @@ body {
   transform: scale(0.96);
 }
 
+/* The assistant in the FAB slot, toned down from the full amber gradient.
+   That gradient is how this app says "primary action", and the assistant is
+   not one — it answers questions about a journey rather than starting it.
+   Keeping the size and position (a thumb lands here) but dropping to the flat
+   light amber the header trigger already used means the slot still reads as
+   tappable without claiming the emphasis that "Scan to unlock" held. */
+.yc-btn-fab.is-assist {
+  background: var(--primary-light);
+  color: #7a5203;
+  border: 1px solid rgba(202, 138, 4, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 8px 22px rgba(28, 25, 23, 0.12);
+}
+
+.yc-btn-fab.is-assist:hover { background: #fcd968; }
+
+/* The first-run scan hint. It used to sit under the scan button inside the
+   sheet, where the sheet's own fill carried it; in the FAB slot it is over
+   bare satellite imagery, where grey text on green is unreadable. Same lesson
+   as the forms: over the map, text needs its own opaque ground, not glass. */
+.yc-scan-hint {
+  max-width: 18rem;
+  margin-top: 0.1rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 252, 246, 0.94);
+  border: 1px solid var(--separator);
+  box-shadow: 0 6px 18px rgba(28, 25, 23, 0.14);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .yc-slide {
   position: relative;
   height: 3.35rem;

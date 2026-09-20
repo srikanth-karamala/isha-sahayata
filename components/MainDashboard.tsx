@@ -367,20 +367,25 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 )}
               </div>
 
-              {/* Sahayata AI lives in the header rather than floating over the
-                  map: down there it covered the imagery credit and the map
-                  controls, and a second amber pill above "Scan to unlock" read
-                  as a competing primary action. Here it is always in the same
-                  place, on every tab, and reachable with a thumb. */}
-              <button
-                type="button"
-                onClick={() => setAssistantOpen(true)}
-                className="yc-assist-trigger shrink-0"
-                aria-label="Ask Sahayata AI"
-                title="Ask Sahayata AI"
-              >
-                <Sparkles className="w-[1.05rem] h-[1.05rem]" aria-hidden />
-              </button>
+              {/* Scan sits in the header and the assistant took its place at
+                  the foot of the sheet. Gated to the cycles tab, and hidden
+                  during a ride, so it appears exactly where it did before the
+                  swap: Report and Lost & Found have their own primary action,
+                  and a rider already on a cycle wants the drop-off controls.
+
+                  Icon-only because this slot is a round 47px button; the label
+                  it carried as a pill lives on in aria-label and title. */}
+              {tab === 'cycles' && !activeRide && (
+                <button
+                  type="button"
+                  onClick={openScan}
+                  className="yc-assist-trigger shrink-0"
+                  aria-label="Scan to unlock a cycle"
+                  title="Scan to unlock"
+                >
+                  <QrCode className="w-[1.05rem] h-[1.05rem]" aria-hidden />
+                </button>
+              )}
             </div>
             {showMap && !userPos && !tracker.currentPos && !activeRide && (
               <button
@@ -584,13 +589,21 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </div>
 
                 <div className="flex flex-col items-center gap-1.5 px-3">
-                  <button type="button" onClick={openScan} className="yc-btn-fab">
-                    <QrCode className="w-5 h-5" />
-                    Scan to unlock
+                  <button
+                    type="button"
+                    onClick={() => setAssistantOpen(true)}
+                    className="yc-btn-fab is-assist"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Ask Sahayata AI
                   </button>
+                  {/* Points at the scan button, which is now in the header —
+                      so it names where to look. Still gated on having no saved
+                      identity, so it disappears after the first ride. */}
                   {checkedStorage && !rider && (
-                    <p className="yc-meta text-center px-4 max-w-[18rem]">
-                      First scan asks for your name and phone, then unlocks the cycle.
+                    <p className="yc-scan-hint">
+                      To ride, tap <QrCode className="inline w-3 h-3 -mt-0.5" aria-hidden />{' '}
+                      at the top. First scan asks your name and phone.
                     </p>
                   )}
                 </div>
