@@ -420,6 +420,13 @@ body {
   pointer-events: none !important;
 }
 
+/* With no map, a full-height panel should take the screen rather than share
+   it with the spacer — otherwise both claim flex:1 and a dead band opens up
+   between the header and the panel. */
+.yc-app-ui:has(.yc-bottom-stack.is-full) .yc-app-spacer {
+  flex: 0 0 auto;
+}
+
 .yc-map-controls {
   /* Anchored to the map panel, not the screen: the old offset was measured
      from the top of a full-bleed map and pushed the zoom buttons off the
@@ -2067,4 +2074,335 @@ html:has(.yc-phone-stage),
 body:has(.yc-phone-stage) {
   overflow: hidden;
   height: 100%;
+}
+
+/* ===============================================================
+   Onboarding — the "what is Sahayata" introduction
+   Sits between the splash and the map on a first visit. Borrows the
+   splash's paper-and-glow backdrop so the two read as one arrival,
+   but is scrollable and dismissible: it holds real reading matter.
+   =============================================================== */
+
+.yc-onboarding {
+  position: absolute;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 95% 50% at 50% 30%, rgba(245, 183, 0, 0.2) 0%, transparent 62%),
+    var(--paper);
+  animation: yc-fade-in 0.3s var(--spring);
+}
+
+.yc-onboarding-inner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1.4rem;
+  padding-top: max(2.2rem, env(safe-area-inset-top, 0px));
+}
+
+/* The reading area scrolls; the actions below it never do, so "Get
+   started" stays reachable on a short screen without hunting for it. */
+.yc-onboarding-top {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 1rem;
+}
+
+.yc-onboarding-top.is-list {
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  padding-top: 0.5rem;
+}
+
+.yc-onboarding-mark {
+  width: 76px;
+  height: 76px;
+  border-radius: 1.5rem;
+  object-fit: cover;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(28, 25, 23, 0.08),
+    0 18px 40px rgba(28, 25, 23, 0.16);
+  animation: yc-splash-rise 0.6s var(--spring) both;
+}
+
+.yc-onboarding-list {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+}
+
+.yc-onboarding-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--separator);
+  animation: yc-splash-rise 0.5s var(--spring) both;
+}
+
+.yc-onboarding-list li:last-child {
+  border-bottom: none;
+}
+
+/* Staggered so the list assembles rather than snapping in at once. */
+.yc-onboarding-list li:nth-child(1) { animation-delay: 0.04s; }
+.yc-onboarding-list li:nth-child(2) { animation-delay: 0.1s; }
+.yc-onboarding-list li:nth-child(3) { animation-delay: 0.16s; }
+.yc-onboarding-list li:nth-child(4) { animation-delay: 0.22s; }
+
+.yc-onboarding-icon {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.95rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.1);
+}
+
+.yc-onboarding-actions {
+  flex-shrink: 0;
+  padding-bottom: max(1.3rem, env(safe-area-inset-bottom, 0px));
+  padding-top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-onboarding,
+  .yc-onboarding-mark,
+  .yc-onboarding-list li {
+    animation: none;
+  }
+}
+
+/* ===============================================================
+   Ashram Info — timings, places, contacts, guidelines
+   A reading surface rather than a control surface, so it is quieter
+   than the cycle sheets: no glass, more line-height, and the section
+   switcher is a segmented row rather than another bottom nav.
+   =============================================================== */
+
+.yc-info-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.yc-info-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0 0.85rem 0.7rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Four labels do not fit across a phone. Scrolling is the honest answer;
+     the padding keeps the last tab clear of the edge once scrolled. */
+  scroll-padding-inline: 0.85rem;
+}
+
+.yc-info-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.yc-info-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  flex: 0 0 auto;
+  justify-content: center;
+  min-height: 2.35rem;
+  padding: 0 0.62rem;
+  border-radius: 1rem;
+  border: 1px solid var(--separator);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: background 0.18s var(--spring), color 0.18s var(--spring);
+}
+
+.yc-info-tab.is-active {
+  background: var(--primary);
+  border-color: transparent;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.1);
+}
+
+.yc-info-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 0.95rem 1rem;
+}
+
+.yc-info-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.yc-info-card {
+  padding: 0.85rem 0.95rem;
+  border-radius: 1.1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--separator);
+}
+
+/* A visitor must be able to tell a checked timing from an unchecked one at a
+   glance, without reading to the end of the card. */
+.yc-info-chip {
+  flex-shrink: 0;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.5rem;
+  background: rgba(202, 138, 4, 0.14);
+  color: var(--primary-dark);
+  white-space: nowrap;
+}
+
+.yc-info-caveat {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--separator);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--primary-dark);
+}
+
+.yc-info-tel {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--primary-dark);
+}
+
+.yc-info-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1rem 1.6rem;
+}
+
+.yc-info-landmarks {
+  margin-top: 1rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 1.1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--separator);
+}
+
+.yc-info-landmarks ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.yc-info-landmarks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.yc-info-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0 0.15rem;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Report a fault — an action on the Cycles tab since the nav went to four
+   service tabs. Quieter than the assistant button below it: reporting is
+   occasional, and it should not compete with asking for help. */
+.yc-report-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.1rem;
+  padding: 0 0.7rem;
+  border-radius: 0.9rem;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  transition: color 0.18s var(--spring), background 0.18s var(--spring);
+}
+
+.yc-report-link:active {
+  background: rgba(28, 25, 23, 0.04);
+  color: var(--ink-2);
+}
+
+/* .yc-btn-primary and .yc-btn-ghost are block buttons: an icon inside one
+   wraps to its own line and drifts to the edge. These surfaces pair an icon
+   with the label, so they opt into centring it. Scoped rather than applied to
+   the base classes, which are used in many places that expect today's
+   rendering. */
+.yc-onboarding-actions .yc-btn-primary,
+.yc-onboarding-actions .yc-btn-ghost,
+.yc-info-empty .yc-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+/* In an empty section the call to action is one item among prose, not a
+   full-width form control. */
+.yc-info-empty .yc-btn-ghost {
+  width: auto;
+  min-height: 2.4rem;
+  padding: 0 0.95rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--separator);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 13px;
 }

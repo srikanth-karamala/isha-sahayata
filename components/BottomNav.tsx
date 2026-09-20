@@ -1,15 +1,19 @@
 'use client';
 
-import { Bike, Search, Wrench } from 'lucide-react';
+import { Bike, Bus, Search, Info } from 'lucide-react';
 
-export type RiderTab = 'cycles' | 'report' | 'lost-found';
+export type RiderTab = 'cycles' | 'ride' | 'lost-found' | 'info';
 
 /**
  * Persistent bottom navigation for the rider app.
  *
- * "Report" is a first-class destination rather than something buried behind a
- * checkout: the common case is walking up to a visibly broken cycle and wanting
- * to flag it without unlocking it first.
+ * Four destinations, one per service. Reporting a fault used to sit here as a
+ * fifth: it was promoted out of the checkout flow because the common case is
+ * walking up to a visibly broken cycle and wanting to flag it without
+ * unlocking it first. That reasoning still holds, but a fault is always about
+ * a cycle, so it now lives as an action inside the Cycles tab rather than a
+ * top-level peer of the services. Five tabs left each one ~75px wide on a
+ * phone and made "Lost & Found" wrap.
  */
 export default function BottomNav({
   active,
@@ -20,8 +24,9 @@ export default function BottomNav({
 }) {
   const tabs: { id: RiderTab; label: string; Icon: typeof Bike }[] = [
     { id: 'cycles', label: 'Cycles', Icon: Bike },
-    { id: 'report', label: 'Report', Icon: Wrench },
+    { id: 'ride', label: 'Ride', Icon: Bus },
     { id: 'lost-found', label: 'Lost & Found', Icon: Search },
+    { id: 'info', label: 'Info', Icon: Info },
   ];
 
   return (

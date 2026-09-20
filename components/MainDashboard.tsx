@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { QrCode, ShieldAlert } from 'lucide-react';
+import { QrCode, ShieldAlert, Wrench } from 'lucide-react';
 import PhoneShell from './PhoneShell';
 import QRScanner from './QRScanner';
 import ActionModal from './ActionModal';
@@ -10,12 +10,16 @@ import BottomNav, { type RiderTab } from './BottomNav';
 import AssistantChat from './AssistantChat';
 import ReportFaultPanel from './ReportFaultPanel';
 import LostFoundPanel from './LostFoundPanel';
+import AshramInfoPanel from './AshramInfoPanel';
+import RidePanel from './RidePanel';
 import { getOpenItems } from '@/app/lost-found-actions';
 import SplashScreen from './SplashScreen';
+import OnboardingScreen from './OnboardingScreen';
 import IdentityGate from './IdentityGate';
 import DynamicIsland from './DynamicIsland';
 import useRideTracker from '@/hooks/useRideTracker';
 import { loadRiderIdentity, type RiderIdentity } from '@/lib/rider-identity';
+import { hasSeenOnboarding, markOnboardingSeen } from '@/lib/onboarding';
 import { clearStoredRide, loadStoredRide, saveStoredRide } from '@/lib/active-ride';
 import { dropOffCycle, getActiveCycleForUser, getHubs, pingRideTrack } from '@/app/actions';
 import type { CycleDetail, HubSummary } from '@/lib/types';
@@ -47,6 +51,9 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   // Set when a reported fault comes back unsafe — the rider must be told.
   const [faultVerdict, setFaultVerdict] = useState<string | null>(null);
   const [tab, setTab] = useState<RiderTab>('cycles');
+  // Reporting a fault is a mode within the Cycles tab rather than a tab of its
+  // own: a fault is always about a cycle, and five bottom tabs did not fit.
+  const [reportOpen, setReportOpen] = useState(false);
   // When the report panel asks for a scan, the scanned code lands here.
   const [scanTarget, setScanTarget] = useState<'unlock' | 'report'>('unlock');
   const [reportQr, setReportQr] = useState<string | null>(null);
@@ -54,7 +61,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
 
   // The map earns its place on the Cycles tab and during a ride; elsewhere it
   // is decoration behind a full-height panel.
-  const showMap = tab === 'cycles' || Boolean(activeRide);
+  const showMap = (tab === 'cycles' && !reportOpen) || Boolean(activeRide);
 
   // Fleet-wide counts for the island on the non-map tabs.
   const faultsReported = hubs.reduce((sum, h) => sum + faultCount(h), 0);
@@ -75,6 +82,9 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
 
   // Shown once per mount while the map and hub data settle.
   const [splashDone, setSplashDone] = useState(false);
+  // The introduction is shown once per device, after the splash. Starts null
+  // so nothing flashes before localStorage has been read on the client.
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
   const sheetDragY = useRef(0);
   const tracker = useRideTracker();
@@ -89,6 +99,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
 
   useEffect(() => {
     setRider(loadRiderIdentity());
+    setShowOnboarding(!hasSeenOnboarding());
     setCheckedStorage(true);
   }, []);
 
@@ -204,7 +215,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     ? 'near-drop'
     : activeRide
       ? 'riding'
-      : tab === 'report'
+      : reportOpen
         ? 'report'
         : tab === 'lost-found'
           ? 'lost-found'
@@ -215,7 +226,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   // reader cannot act on. An active ride keeps the cycle framing on every tab,
   // because getting the cycle back is then the only task that matters.
   const headerStat: { value: number | string; caption: string; detail?: string } =
-    !activeRide && tab === 'report'
+    !activeRide && reportOpen
       ? {
           value: faultsReported,
           caption: 'reported',
@@ -296,6 +307,14 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
     <PhoneShell>
       <div className="yc-app">
         {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
+        {splashDone && showOnboarding && (
+          <OnboardingScreen
+            onDone={() => {
+              markOnboardingSeen();
+              setShowOnboarding(false);
+            }}
+          />
+        )}
         {/* Report and Lost & Found have nothing to do with location, so the
             map is not rendered behind them: it adds no information, its
             controls sit over content they do not act on, and it keeps a WebGL
@@ -481,7 +500,7 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                   <p className="yc-meta mt-2 text-center">Swipe handle up for drop-off controls</p>
                 )}
               </div>
-            ) : tab === 'report' ? (
+            ) : reportOpen ? (
               <ReportFaultPanel
                 userId={rider?.id ?? null}
                 userPos={userPos}
@@ -492,11 +511,15 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 }}
                 onDone={() => {
                   setReportQr(null);
-                  setTab('cycles');
+                  setReportOpen(false);
                   void refreshHubs();
                 }}
                 onNeedIdentity={() => setNeedsIdentity(true)}
               />
+            ) : tab === 'info' ? (
+              <AshramInfoPanel />
+            ) : tab === 'ride' ? (
+              <RidePanel />
             ) : tab === 'lost-found' ? (
               <LostFoundPanel
                 userId={rider?.id ?? null}
@@ -588,6 +611,19 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 </div>
 
                 <div className="flex flex-col items-center gap-1.5 px-3">
+                  {/* Report lost its bottom-nav slot when the nav went to four
+                      service tabs. It keeps its standing as something you can
+                      reach without unlocking a cycle first — that was the whole
+                      point of promoting it — but as an action on the tab it
+                      belongs to. */}
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(true)}
+                    className="yc-report-link"
+                  >
+                    <Wrench className="w-3.5 h-3.5" aria-hidden />
+                    Report a broken cycle
+                  </button>
                   <button
                     type="button"
                     onClick={() => setAssistantOpen(true)}
@@ -617,7 +653,15 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
 
             {/* Nav sits below the sheet; hidden during an active ride so the
                 drop-off controls stay the only thing to act on. */}
-            {!activeRide && <BottomNav active={tab} onChange={setTab} />}
+            {!activeRide && (
+              <BottomNav
+                active={tab}
+                onChange={(next) => {
+                  setReportOpen(false);
+                  setTab(next);
+                }}
+              />
+            )}
           </div>
 
           <AssistantChat
@@ -655,7 +699,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               if (scanTarget === 'report') {
                 setReportQr(code);
                 setScanTarget('unlock');
-                setTab('report');
+                setTab('cycles');
+                setReportOpen(true);
                 return;
               }
               setActiveQr(code);
