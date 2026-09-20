@@ -56,9 +56,10 @@ The flow that demonstrates the most in the least time:
   the campus". Desktop browsers locate by IP address, often hundreds of
   kilometres out, so the app refuses to quote a distance it cannot trust.
   On a phone on campus, real distances appear.
-- **Most Ashram Info sections are empty.** Only two of fifteen facts are shown
-  at all; the other twelve are unconfirmed and deliberately hidden. See
-  `ASHRAM-FACTS-TODO.md`.
+- **Many Ashram Info cards carry a "NOT CHECKED" chip.** Nine of the eleven
+  facts shown came from the official Isha website rather than a noticeboard,
+  so they are given with that caveat. Worth pointing at during a demo: the app
+  distinguishes what it knows from what it has merely read.
 
 ## Known gaps, if asked
 

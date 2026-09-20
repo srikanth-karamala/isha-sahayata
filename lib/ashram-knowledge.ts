@@ -81,6 +81,18 @@ export interface Fact {
  * with invented timings would be the single most damaging thing this feature
  * could do.
  */
+/**
+ * Where the September 2026 batch of answers came from.
+ *
+ * The official Isha website, not the noticeboards. Everything carrying this
+ * source is `unverified` on purpose: a published page goes stale silently,
+ * while a noticeboard is corrected the morning a timing changes, and it is the
+ * noticeboard a visitor is standing in front of. Shown with the caveat
+ * attached, which is a large improvement on being invisible, but each one
+ * still wants five minutes at the right desk to become `confirmed`.
+ */
+const SOURCE_WEBSITE = 'Official Isha website, 20 September 2026 — NOT yet checked on site';
+
 export const ASHRAM_FACTS: Fact[] = [
   // ── Getting here ────────────────────────────────────────────────────────
   {
@@ -99,23 +111,28 @@ export const ASHRAM_FACTS: Fact[] = [
   {
     topic: 'How to reach the Isha Yoga Center',
     detail:
-      'Confirm the distance and usual travel time from Coimbatore city and from Coimbatore airport and railway station, and which public buses serve the centre. Note the last bus of the day, which is what a late arrival actually needs.',
-    verified: 'PLACEHOLDER',
-    source: 'Reception desk at Main Gate; the official travel page',
+      'The centre is about 30 km west of Coimbatore. Coimbatore airport is about 40 km away and Coimbatore Junction railway station about 30 km. City buses 14D and 14C run from Gandhipuram, and taxis are available from the airport and the station.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask at the desk: the time of the LAST bus of the day, which is
+    // what a late arrival actually needs and which the website does not give.
   },
   {
     topic: 'Arrival and registration',
     detail:
-      'Confirm where a visitor reports on arrival, what identification is required, and whether day visitors need to register at all.',
-    verified: 'PLACEHOLDER',
-    source: 'Main Gate reception',
+      'What you need to do on arrival depends on why you are visiting. Visitors coming from outside India are asked to raise a visit request through Isha\'s Overseas Online Portal before travelling. For anything else, the desk at Main Gate will tell you where to report.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask at the desk: whether a day visitor needs to register at
+    // all, and what identification is required. The website is clear only
+    // about overseas visitors.
   },
 
   // ── Temple and offerings ────────────────────────────────────────────────
   {
     topic: 'Temple timings',
     detail:
-      'The Dhyanalinga is generally open from about 6:00am to 8:00pm. The Linga Bhairavi temple is generally open about 6:30am to 1:20pm and again from about 4:20pm to 8:20pm. Both can change seasonally and on special days.',
+      'The Dhyanalinga is open 6:00am to 8:30pm. Linga Bhairavi opens at 6:30am and closes at 8:20pm. Kalabhairava is open 6:30am to 8:00pm. Timings can change seasonally and on special days.',
     // Published with a caveat rather than as fact: these came from a general
     // source, not from the noticeboard at the temple. Withholding them left
     // the assistant unable to answer the question visitors ask most, which
@@ -123,9 +140,11 @@ export const ASHRAM_FACTS: Fact[] = [
     // on a number nobody has checked. Confirm on site, then move to
     // 'confirmed' and stamp `checked`.
     verified: 'unverified',
-    source: 'General published information — NOT yet checked on site',
+    source: SOURCE_WEBSITE,
     // Still to ask at the boards:
-    //   Dhyanalinga — is there a midday break?
+    //   Linga Bhairavi — the website gives an opening and a closing time but
+    //     no midday break, while an earlier source described two sessions.
+    //     Worth confirming which is right.
     //   Suryakund / Chandrakund — quoted elsewhere as one 7:30am-8:00pm
     //     window, but 12.5 unbroken hours is unusual for the kunds and reads
     //     like two sessions merged. Deliberately left out until someone can
@@ -134,9 +153,12 @@ export const ASHRAM_FACTS: Fact[] = [
   {
     topic: 'Daily rituals and offerings',
     detail:
-      'Confirm the names and times of the daily offerings at each temple, and whether visitors may attend each one or only observe.',
-    verified: 'PLACEHOLDER',
-    source: 'Noticeboard at each temple entrance',
+      'The daily schedule includes Guru Pooja, Nada Aradhana, the aratis at the temples, Darshan and Bhakti Sadhana. The noticeboard at each temple entrance carries that day\'s times.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask: the actual clock times for each, and whether a visitor may
+    // take part or only observe. Naming the rituals without their times is
+    // half an answer, so this stays unverified.
   },
   {
     topic: 'Ekadasi and other special days',
@@ -148,41 +170,52 @@ export const ASHRAM_FACTS: Fact[] = [
   {
     topic: 'Milk offering',
     detail:
-      'Confirm the timing of the milk offering, where a visitor obtains the offering, and any restriction on who may participate.',
-    verified: 'PLACEHOLDER',
-    source: 'Temple noticeboard or the attending volunteer',
+      'On Amavasya and Purnima the Dhyanalinga takes a milk offering from 6:00am to 1:00pm, and a water offering from 1:00pm to 8:00pm.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask: what happens on ordinary days, where a visitor obtains the
+    // offering, and whether anyone may take part.
   },
 
   // ── Getting around the campus ───────────────────────────────────────────
   {
     topic: 'Shuttle and golf cart service',
     detail:
-      'Confirm the hours the shuttles and carts run, the route they follow, the fare if any, and whether one can be requested or only boarded at a stop.',
-    verified: 'PLACEHOLDER',
-    source: 'Main Gate desk; the shuttle stand itself',
+      'Shuttles run on fixed routes across the campus: Sarpa Vasal to Adiyogi, Adiyogi to Kalabhairava, Welcome Point to Nalanda and Brahmaputra, Welcome Point to Isha Home School, and Welcome Point to Shivapadam 3 and 4. A bullock cart also runs from Sarpa Vasal to Adiyogi, and from Welcome Point to the metal bridge near Bhiksha Hall.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask at the stand: the HOURS each route runs, the fare if any,
+    // and whether a shuttle can be requested or only boarded at a stop. The
+    // routes are known; when they run is not.
   },
   {
     topic: 'Shuttle pick-up and drop-off points',
     detail:
-      'Confirm the list of stops and roughly how long the shuttle takes between them. The cycle stands in CAMPUS_LANDMARKS below are already accurate and can be named as landmarks alongside these.',
-    verified: 'PLACEHOLDER',
-    source: 'Main Gate desk',
+      'The named stops are Sarpa Vasal, Adiyogi, Kalabhairava, Welcome Point, Nalanda, Brahmaputra, Isha Home School, Shivapadam 3 and Shivapadam 4, and the metal bridge near Bhiksha Hall.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask: roughly how long the shuttle takes between stops.
   },
 
   // ── Staying and eating ──────────────────────────────────────────────────
   {
     topic: 'Dining timings',
     detail:
-      'Confirm the serving windows for each meal at Biksha Hall, and whether day visitors eat there or elsewhere.',
-    verified: 'PLACEHOLDER',
-    source: 'Noticeboard at Biksha Hall',
+      'Bhiksha Hall serves brunch in three sittings, at 9:50am, 10:35am and 11:10am, and dinner at 6:50pm, 7:35pm and 8:10pm.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Note the official spelling is Bhiksha Hall; the cycle stand in
+    // prisma/seed.ts is named "Biksha Hall". Worth reconciling one day.
+    // Still to ask: whether day visitors eat here or elsewhere.
   },
   {
     topic: 'Accommodation',
     detail:
-      'Confirm what accommodation exists for visitors, how it is booked, and the check-in and check-out times.',
-    verified: 'PLACEHOLDER',
-    source: 'Reception; the official accommodation page',
+      'There are cottages for visitors — Standard, AC and Executive Suite — and other accommodation such as the Nadi Cottages and Nalanda is used for programmes. Booking is through the Isha website or reception.',
+    verified: 'unverified',
+    source: SOURCE_WEBSITE,
+    // Still to ask: check-in and check-out times, which a visitor planning a
+    // stay needs and which are not published.
   },
 
   // ── Programmes ──────────────────────────────────────────────────────────
@@ -198,9 +231,17 @@ export const ASHRAM_FACTS: Fact[] = [
   {
     topic: 'Dress code and conduct',
     detail:
-      'Confirm what visitors are asked to wear, particularly for entering the temples, and any restriction on photography, footwear or phones.',
-    verified: 'PLACEHOLDER',
-    source: 'Noticeboard at Main Gate and temple entrances',
+      'Traditional Indian attire is asked for, and clothing should cover the upper arms, thighs and ankles. Shorts, capris, and tight or transparent clothing are not permitted.',
+    // Confirmed rather than unverified, on the same reasoning as the address:
+    // this is a standing policy published by the ashram itself, not a timing
+    // that drifts with the season. Someone turned away at a temple entrance
+    // for the wrong clothes is a real cost, and hedging the one piece of
+    // advice that prevents it would help nobody.
+    verified: 'confirmed',
+    source: 'Official Isha website — standing dress policy',
+    checked: '2026-09-20',
+    // Still to ask at the boards: any restriction on photography, footwear or
+    // phones, which is not covered here.
   },
   {
     topic: 'Accessibility',

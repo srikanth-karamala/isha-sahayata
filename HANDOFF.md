@@ -167,9 +167,9 @@ caveat, and `PLACEHOLDER` entries are not rendered at all. **So a section can
 legitimately be empty, and that is not a bug.** An empty section says "ask at
 the desk", which is the right answer when nobody has confirmed the timing, and
 far better than a confident number that sends someone across the campus for a
-darshan that finished an hour ago. Two of fifteen facts currently clear the bar
-— the address, confirmed, and the temple timings, shown with their caveat — so
-most sections are empty today.
+darshan that finished an hour ago. Eleven of the fourteen facts now reach a
+visitor: two confirmed outright (the address and the dress code) and nine
+carrying the "not checked" caveat. Three remain placeholders.
 
 **Ride is deliberately a stub.** The service needs its own data model —
 vehicles, stops, timings, possibly requests with an accept/assign step and a
@@ -337,9 +337,10 @@ kilometres out, and the app refuses to quote a distance from a fix it does not
 believe. On a phone on the campus, real distances appear. See the 441 km trap
 above.
 
-**Most Ashram Info sections are empty.** Only two of fifteen facts are shown at
-all — the address, and the temple timings carrying a "not checked" caveat. The
-other twelve are `PLACEHOLDER` and deliberately not rendered.
+**Many Ashram Info cards say "NOT CHECKED".** That is the design, not a
+shortfall: nine of the eleven visible facts came from the official Isha
+website rather than a noticeboard, so they are shown with the caveat attached.
+Three entries are still `PLACEHOLDER` and not rendered at all.
 Filling them needs someone with a notepad at the noticeboards, not a code
 change — `lib/ashram-knowledge.ts` says how.
 
@@ -368,10 +369,10 @@ introduction on any build.
 - **Ride needs its design pass** before any code: timetable or on-demand, who
   drives, whether a request needs accepting. Comparable in size to what Lost &
   Found took.
-- **Twelve of fifteen ashram facts are unconfirmed placeholders**, and a
-  thirteenth (temple timings) is shown only with a caveat. The highest value
-  per hour of anything on this list, and it needs no code — just someone at the
-  noticeboards, editing `lib/ashram-knowledge.ts`.
+- **Nine ashram facts are shown but unconfirmed**, and three are still
+  placeholders. The website answered most of what was missing; what it cannot
+  give is the last bus of the day, the shuttle hours, check-in times and the
+  clock times of the daily rituals. Those want five minutes at the right desk.
   `ASHRAM-FACTS-TODO.md` is the checklist, grouped by where to go.
 - **22 pre-existing lint problems** (17 errors, 5 warnings) in the rider UI and
   one script, all from before these sessions. Nothing added by them — the count
