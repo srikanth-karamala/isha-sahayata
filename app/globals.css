@@ -289,7 +289,10 @@ body {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #3a5238;
+  /* The app's own warm paper. This was the forest green the full-bleed map
+     used, so that unloaded tiles blended into it; now the map is a contained
+     panel, that green was just a dark border around everything. */
+  background: var(--paper);
   isolation: isolate;
 }
 
@@ -346,11 +349,30 @@ body {
   font-family: var(--sans);
 }
 
+/* The map is a panel, not the wallpaper.
+   Full-bleed, it ran under the header and behind the bottom sheet, so most of
+   the imagery was never visible and the part that was had UI sitting on it.
+
+   It sits in the flex slot between the header and the sheet rather than being
+   absolutely positioned: the sheet's height changes as it expands, collapses
+   and as the dock list grows, so any fixed inset was either overlapped by the
+   sheet or left a gap above it. Letting the flex row size it means the map is
+   always exactly the space left over. */
 .yc-app-map {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0.6rem 0.75rem 0.4rem;
   z-index: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(28, 25, 23, 0.16);
+  pointer-events: auto;
 }
+
+/* The map's own canvas must fill the rounded panel. */
+.yc-app-map > * { position: absolute; inset: 0; }
 
 /* Stands in for the map on tabs that do not use it: the app's own warm
    ground, so the panel above still reads as a sheet on a surface. */
@@ -399,14 +421,31 @@ body {
 }
 
 .yc-map-controls {
+  /* Anchored to the map panel, not the screen: the old offset was measured
+     from the top of a full-bleed map and pushed the zoom buttons off the
+     bottom of the shorter panel. */
   position: absolute;
-  top: calc(4.75rem + 5.5rem);
-  right: 0.85rem;
+  top: 0.65rem;
+  right: 0.65rem;
   z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.65rem;
+}
+
+/* The lower group: pinned to the bottom-right of the panel, lifted just clear
+   of the "Imagery © Esri" credit that sits in that corner. */
+.yc-map-controls.is-bottom {
+  top: auto;
+  bottom: 0.65rem;
+}
+
+/* Move the imagery credit to the left so it no longer sits under the zoom
+   buttons; attribution must stay visible, so it moves rather than hides. */
+.yc-map .maplibregl-ctrl-bottom-right {
+  left: 0;
+  right: auto;
 }
 
 .yc-map-ctrl {

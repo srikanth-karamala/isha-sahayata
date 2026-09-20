@@ -12,7 +12,7 @@ import { CAMPUS_CENTER, haversineMeters, hubPosition, toLngLat } from '@/lib/geo
 import { campusMaxBounds, campusSatelliteStyle, pitchForZoom } from '@/lib/map-style';
 
 /** Pitched campus view — foothills sit behind the ashram when bearing is slight west. */
-const VIEW_3D = { pitch: 52, bearing: -28 } as const;
+const VIEW_3D = { pitch: 38, bearing: 0 } as const;
 const VIEW_2D = { pitch: 0, bearing: 0 } as const;
 
 function pinElement(hub: HubSummary, selected: boolean) {
@@ -244,12 +244,15 @@ function MapView({
       // padding to what the canvas can actually give, and skip the fit
       // entirely until the map has been laid out.
       // fitBounds warns when the padding leaves no usable area. Cap each axis
-      // at a third of the container so a meaningful viewport always remains,
-      // and weight the vertical split toward the bottom, where the rider's
-      // sheet sits. Measured in CSS pixels, which is what fitBounds expects.
+      // at a third of the container so a meaningful viewport always remains.
+      // The vertical split used to be weighted heavily toward the bottom,
+      // where the rider's sheet overlapped a full-bleed map; the map is now a
+      // contained panel with nothing over it, so the padding is even and only
+      // has to keep the outermost pins inside the rounded frame.
+      // Measured in CSS pixels, which is what fitBounds expects.
       if (width > 120 && height > 120) {
         const padX = Math.floor(Math.min(width / 3, 104) / 2);
-        const padY = Math.floor(Math.min(height / 3, 240));
+        const padY = Math.floor(Math.min(height / 3, 96));
 
         const bounds = new LngLatBounds(points[0], points[0]);
         points.forEach((point) => bounds.extend(point));
@@ -261,8 +264,8 @@ function MapView({
         // and apply it with easeTo, which performs no such check.
         const camera = map.cameraForBounds(bounds, {
           padding: {
-            top: Math.round(padY * 0.32),
-            bottom: Math.round(padY * 0.68),
+            top: Math.round(padY * 0.5),
+            bottom: Math.round(padY * 0.5),
             left: padX,
             right: padX,
           },
@@ -271,7 +274,11 @@ function MapView({
         if (camera) {
           map.easeTo({
             center: camera.center,
-            zoom: Math.min(camera.zoom ?? 16.2, 17),
+            // Trust the fitted zoom. Capping it at 17 zoomed in past the
+            // framing cameraForBounds had just computed, which pushed the
+            // outermost hub pins outside the panel — visible as a marker
+            // clipped by the bottom edge.
+            zoom: camera.zoom ?? 16.2,
             duration: 700,
             ...cameraExtras(),
           });
@@ -447,6 +454,12 @@ function MapView({
           <Box className="w-4 h-4" />
           <span>{is3D ? '3D' : '2D'}</span>
         </button>
+      </div>
+
+      {/* Locate and zoom sit at the foot of the panel, clear of the hub markers
+          that cluster centre-right and above the imagery credit. 3D stays at
+          the top on its own: it changes the whole view, the others nudge it. */}
+      <div className="yc-map-controls is-bottom" aria-label="Map zoom controls">
         {showLocate && (
           <button
             type="button"

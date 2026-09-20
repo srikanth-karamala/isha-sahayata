@@ -301,24 +301,6 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             controls sit over content they do not act on, and it keeps a WebGL
             canvas running behind an opaque panel. An active ride always shows
             the map, whichever tab is selected. */}
-        {showMap ? (
-          <div className="yc-app-map">
-            <MapView
-              hubs={hubs}
-              selectedHubId={selectedHubId}
-              followRider={Boolean(activeRide)}
-              currentPos={tracker.currentPos}
-              ridePath={tracker.ridePath}
-              onSelectHub={(id) => {
-                setSelectedHubId(id);
-                setSheetExpanded(true);
-              }}
-              onUserLocated={setUserPos}
-            />
-          </div>
-        ) : (
-          <div className="yc-app-plain" aria-hidden />
-        )}
 
         <DynamicIsland
           mode={islandMode}
@@ -406,7 +388,24 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             )}
           </header>
 
-          {showMap && <div className="yc-app-spacer" />}
+          {showMap ? (
+            <div className={`yc-app-map${activeRide ? ' is-riding' : ''}`}>
+              <MapView
+                hubs={hubs}
+                selectedHubId={selectedHubId}
+                followRider={Boolean(activeRide)}
+                currentPos={tracker.currentPos}
+                ridePath={tracker.ridePath}
+                onSelectHub={(id) => {
+                  setSelectedHubId(id);
+                  setSheetExpanded(true);
+                }}
+                onUserLocated={setUserPos}
+              />
+            </div>
+          ) : (
+            <div className="yc-app-spacer" />
+          )}
 
           <div
             className={`yc-bottom-stack ${sheetExpanded ? 'is-expanded' : 'is-peek'}${
@@ -624,6 +623,8 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
           <AssistantChat
             open={assistantOpen}
             onClose={() => setAssistantOpen(false)}
+            // Live tracker position while riding, otherwise the shared one.
+            at={tracker.currentPos ?? userPos}
           />
         </div>
 
