@@ -136,9 +136,7 @@ export default function OnboardingScreen({
                 <p className="yc-body-sm mt-1.5">
                   Not sure where to start? Ask in your own words — where to
                   find a cycle, when the temple opens, what time dinner is
-                  served. It knows the campus and answers from what is
-                  happening right now, and it says so when something has not
-                  been confirmed.
+                  served.
                 </p>
               </div>
             </div>
