@@ -123,11 +123,26 @@ export default function ReportFaultPanel({
 
   return (
     <div className="yc-sheet yc-sheet-solid p-5 space-y-3">
-      <div>
-        <h3 className="yc-title yc-title-md">Report a problem</h3>
-        <p className="yc-body-sm mt-0.5">
-          Flag a cycle that needs staff attention. You do not need to unlock it.
-        </p>
+      {/* Reporting is reached from the Cycles tab rather than a tab of its
+          own, so without this the only ways out of a half-filled form were
+          sending it or switching tab — a dead end on the one screen someone
+          is most likely to open by mistake. */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="yc-title yc-title-md">Report a problem</h3>
+          <p className="yc-body-sm mt-0.5">
+            Flag a cycle that needs staff attention. You do not need to unlock it.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDone}
+          className="yc-panel-close shrink-0"
+          aria-label="Close without reporting"
+          title="Close"
+        >
+          <X className="w-[1.05rem] h-[1.05rem]" aria-hidden />
+        </button>
       </div>
 
       <div>
