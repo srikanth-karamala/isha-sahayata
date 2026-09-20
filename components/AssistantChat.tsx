@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Send, Sparkles } from 'lucide-react';
-import { askAssistant } from '@/app/assistant-actions';
+import { X, Send, Sparkles, AlertTriangle } from 'lucide-react';
+import { askAssistant, assistantNeedsSetup } from '@/app/assistant-actions';
 import type { ChatTurn } from '@/lib/ai';
 
 /**
  * Sahayata AI — a floating assistant for visitor questions.
  *
- * Sits above every tab because the questions it answers ("where is the temple",
- * "which stand has cycles") do not belong to any one of them.
+ * Opened from a button at the foot of the cycles sheet. It was previously a
+ * round trigger in the header, reachable from every tab; the two swapped places
+ * so that scanning — the thing a rider opens this app to do — occupies the
+ * header slot. The cost is that Report and Lost & Found no longer offer the
+ * assistant; if that proves wrong, the header trigger is the thing to restore.
  *
  * The assistant answers only from live app data and facts a human has
  * confirmed in lib/ashram-knowledge.ts; see app/assistant-actions.ts for why.
@@ -34,6 +37,10 @@ export default function AssistantChat({
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [provider, setProvider] = useState<string | null>(null);
+  // Answered by the server, twice over: once when the panel opens, and again
+  // with every reply. Whether a fact is confirmed is a server-side question,
+  // and lib/ashram-knowledge.ts should not reach the client bundle to answer it.
+  const [unconfigured, setUnconfigured] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,6 +50,23 @@ export default function AssistantChat({
       behavior: 'smooth',
     });
   }, [turns, busy]);
+
+  useEffect(() => {
+    // Only while open: the panel unmounts when closed, so this runs once per
+    // opening, which is also when a stale answer would matter.
+    if (!open) return;
+    let cancelled = false;
+    void assistantNeedsSetup()
+      .then((needs) => {
+        if (!cancelled) setUnconfigured(needs);
+      })
+      // A failure here is not worth surfacing: the banner is advisory, and
+      // askAssistant reports the same flag with the first real answer.
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const send = async (text: string) => {
     const question = text.trim();
@@ -55,6 +79,7 @@ export default function AssistantChat({
     try {
       const res = await askAssistant(next);
       setProvider(res.provider);
+      setUnconfigured(res.unconfigured);
       setTurns([...next, { role: 'assistant', content: res.reply }]);
     } catch {
       setTurns([
@@ -70,9 +95,9 @@ export default function AssistantChat({
     }
   };
 
-  // Closed state renders nothing: the trigger lives in the header (see
-  // MainDashboard), so the assistant does not float over the map or compete
-  // with the primary action at the bottom of the screen.
+  // Closed state renders nothing: the trigger is a button at the foot of the
+  // cycles sheet (see MainDashboard), so the assistant never floats over the
+  // map or covers the imagery credit and the map controls.
   if (!open) return null;
 
   return (
@@ -98,6 +123,22 @@ export default function AssistantChat({
       </header>
 
       <div className="yc-assist-log" ref={scrollRef}>
+        {/* Sits above the log rather than inside the empty-state intro, so it
+            stays visible once the conversation starts — the point at which a
+            declined answer actually needs explaining. */}
+        {unconfigured && (
+          <div className="yc-assist-setup" role="status">
+            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>
+              <b>Setup incomplete.</b> No ashram timings have been confirmed
+              yet, so I can only answer about cycles, lost &amp; found and
+              directions. Staff: confirm the entries in{' '}
+              <code>lib/ashram-knowledge.ts</code> on site and mark them{' '}
+              <code>confirmed</code>.
+            </span>
+          </div>
+        )}
+
         {turns.length === 0 && (
           <div className="yc-assist-intro">
             <p className="yc-body-sm">

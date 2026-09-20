@@ -1796,6 +1796,37 @@ body {
   color: var(--muted);
 }
 
+/* Shown only while lib/ashram-knowledge.ts has no confirmed facts, which is
+   the state the feature ships in. Without it the assistant looks like it is
+   working — it answers cycle questions perfectly well — while declining every
+   timing it is asked about, and nothing on screen says why.
+
+   Addressed to staff, not visitors: a visitor can do nothing about an
+   unconfirmed timing, so the wording names the file and the fix rather than
+   apologising. Amber rather than red because this is the safe state, not a
+   fault, and it carries the word "Setup" so it does not rely on colour alone
+   (the same rule the staff severity chips follow). */
+.yc-assist-setup {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0 0 0.2rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.8rem;
+  background: #fdf3dc;
+  border: 1px solid rgba(138, 97, 0, 0.22);
+  color: #6f4e00;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.yc-assist-setup svg { flex: none; margin-top: 1px; }
+
+.yc-assist-setup b {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
 /* Counts ride in the heading of the thing they count, rather than in a row of
    cards above it. The row restated what the sections below already showed —
    "open · lost 3" over a list of three lost reports — and cost the pairings,

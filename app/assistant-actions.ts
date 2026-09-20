@@ -85,6 +85,18 @@ export interface AssistantReply {
   unconfigured: boolean;
 }
 
+/**
+ * Whether any ashram fact has been confirmed, asked before the first question.
+ *
+ * askAssistant already returns this, but only once an answer comes back. The
+ * warning needs to be up before that: the visitor most likely to be misled is
+ * the one still deciding what to ask, looking at an opener like "How do I get
+ * to Biksha Hall?" with no sign that timings are unavailable.
+ */
+export async function assistantNeedsSetup(): Promise<boolean> {
+  return knowledgeIsEmpty();
+}
+
 export async function askAssistant(history: ChatTurn[]): Promise<AssistantReply> {
   const trimmed = history.slice(-MAX_HISTORY);
   if (trimmed.length === 0 || trimmed[trimmed.length - 1].role !== 'user') {
