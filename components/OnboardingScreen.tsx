@@ -99,7 +99,7 @@ export default function OnboardingScreen({
         ) : (
           <>
             <div className="yc-onboarding-top is-list">
-              <p className="yc-eyebrow">Four things</p>
+              <p className="yc-eyebrow">What is here</p>
               <h2 className="yc-display text-[24px] mt-1.5 mb-1">
                 What Sahayata can help with
               </h2>
@@ -117,6 +117,30 @@ export default function OnboardingScreen({
                   </li>
                 ))}
               </ul>
+
+              {/* Deliberately not a fifth row. The four above are the tabs
+                  along the bottom; the assistant is reachable from anywhere
+                  and answers questions rather than being somewhere you go.
+                  Setting it apart says that without a word of explanation. */}
+              <div className="yc-onboarding-ai">
+                <div className="yc-onboarding-ai-head">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/sahayata-mark-64.png"
+                    alt=""
+                    aria-hidden="true"
+                    className="yc-onboarding-ai-mark"
+                  />
+                  <p className="yc-title yc-title-sm">Ask Sahayata AI</p>
+                </div>
+                <p className="yc-body-sm mt-1.5">
+                  Not sure where to start? Ask in your own words — where to
+                  find a cycle, when the temple opens, what time dinner is
+                  served. It knows the campus and answers from what is
+                  happening right now, and it says so when something has not
+                  been confirmed.
+                </p>
+              </div>
             </div>
 
             <div className="yc-onboarding-actions">

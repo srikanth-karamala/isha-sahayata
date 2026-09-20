@@ -2454,3 +2454,35 @@ body:has(.yc-phone-stage) {
   text-transform: uppercase;
   color: var(--faint);
 }
+
+/* The assistant on the introduction's second screen.
+   Set apart from the four service rows above it rather than added as a fifth:
+   those are the bottom-nav tabs, places you go. This one is reachable from
+   anywhere and answers a question, so it reads as a different kind of thing. */
+.yc-onboarding-ai {
+  margin-top: 1.1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1.15rem;
+  background: rgba(245, 183, 0, 0.1);
+  border: 1px solid rgba(202, 138, 4, 0.22);
+  animation: yc-splash-rise 0.5s var(--spring) 0.28s both;
+}
+
+.yc-onboarding-ai-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.yc-onboarding-ai-mark {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-onboarding-ai {
+    animation: none;
+  }
+}
