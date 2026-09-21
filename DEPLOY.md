@@ -36,9 +36,25 @@ edit → git commit → git push origin main
                  live at the alias
 ```
 
-**Pushing is what deploys.** There is no separate step. To check whether a
-change has landed, open the Vercel **Deployments** tab: the newest entry
-should carry your commit message and be marked **Ready**.
+**Pushing is what deploys. You do not redeploy by hand after a push.** There
+is no separate step and no button to press — Vercel watches `main` and builds
+on every push to it. Wait about two minutes and reload.
+
+To check whether a change has landed, open the Vercel **Deployments** tab:
+the newest entry should carry your commit message and be marked **Ready**.
+
+### When you *do* press Redeploy
+
+Only two cases:
+
+1. **After editing an environment variable.** Those reach a build, not a
+   running site, so saving a key changes nothing until something rebuilds.
+   Untick "use existing build cache" when you do.
+2. **After a failed build**, to retry without making a new commit.
+
+Neither happens in ordinary work. If a change is not showing and neither of
+these applies, the build failed or is queued — check the Deployments tab
+rather than pushing again.
 
 Two things that do *not* work this way:
 
