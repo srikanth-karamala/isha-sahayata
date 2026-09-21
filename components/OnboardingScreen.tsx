@@ -71,9 +71,9 @@ export default function OnboardingScreen({
                 Welcome to Sahayata
               </h1>
               <p className="yc-body mt-4 max-w-[18rem]">
-                Sahayata means help. It is a small app for everyone living and
-                working on the campus — to get around, to find what has gone
-                missing, and to know what is happening where.
+                Sahayata means help. It is an in-ashram app for everyone
+                living and working on the campus — to get around, to find what
+                has gone missing, and to know what is happening where.
               </p>
             </div>
 
