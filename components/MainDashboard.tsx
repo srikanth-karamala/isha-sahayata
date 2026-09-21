@@ -345,7 +345,16 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
   return (
     <PhoneShell>
       <div className="yc-app">
-        {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
+        {/* The splash stays up until localStorage has been read, not merely
+            until its own timer ends. `showOnboarding` starts null and is set
+            in an effect, so releasing the splash on the timer alone left a
+            gap — no splash, no introduction yet — through which the map
+            behind them was visible for a frame or two. Worst under
+            prefers-reduced-motion, where the splash calls onDone immediately
+            and the gap was guaranteed. */}
+        {(!splashDone || showOnboarding === null) && (
+          <SplashScreen onDone={() => setSplashDone(true)} />
+        )}
         {splashDone && showOnboarding && (
           <OnboardingScreen
             onDone={() => {
