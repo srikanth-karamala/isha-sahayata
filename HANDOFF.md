@@ -327,8 +327,8 @@ from any network, stays up without the developer's laptop.
   production alias pointing at the newest successful build, so the link never
   needs resharing.
 - **Prisma Postgres** (via the Vercel integration) rather than the Neon plan
-  in `DEPLOY.md` — one dashboard instead of two, and it sets `DATABASE_URL`
-  itself. `DEPLOY.md` predates this and still describes the Neon route.
+  originally written down — one dashboard instead of two, and it sets
+  `DATABASE_URL` itself. `DEPLOY.md` has the operational detail.
 - **Photos in the database** rather than an object store, so there is no
   second service and local and deployed behaviour are identical.
 
@@ -515,7 +515,7 @@ Pushing to `main` deploys; see the Deployment section above.
 | --- | --- |
 | `README.md` | What the product does and the rider/staff flows. Predates this session; still accurate on the cycles side. |
 | `RUNNING.md` | How to start the app day to day, and what to do when it will not start. Every command in it was run before being written down. |
-| `DEPLOY.md` | Getting it onto a public URL: Neon, GitHub, Vercel. Not started — no git remote, no accounts. Budget an hour, and do it on the hotspot. |
+| `DEPLOY.md` | What is deployed and how to operate it: the pipeline, the environment variables, the two failures that only happen in the cloud, and what to change before real use. |
 | `ASHRAM-FACTS-TODO.md` | The twelve unconfirmed ashram facts, grouped by which desk or noticeboard answers them. Generated from `lib/ashram-knowledge.ts`. |
 | `DEMO-DAY.md` | Running a demo off the ngrok tunnel: the link, how to restart it, what to show, and what will look like a bug but is not. |
 | `JOURNAL.md` | What happened across 19-21 September, in order: the decisions, the bugs and what each one taught. Read this to understand how the app got here. |

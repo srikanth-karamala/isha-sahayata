@@ -1,123 +1,160 @@
-# Deploying Isha Sahayata
+# Deployment — Isha Sahayata
 
-Target: a public URL a panel can open from anywhere, on any device.
+**It is deployed.** https://isha-sahayata.vercel.app — no password, reachable
+from any network, and it stays up without anyone's laptop.
 
-The app is deployment-ready — photos are stored in Postgres rather than on
-disk, so nothing writes to the filesystem at runtime. What remains is a hosted
-database, a git remote, and Vercel.
-
-Budget about an hour. Steps 1-3 need your account credentials, so they are
-yours to run; steps 4-6 are things I can do once you paste back the connection
-string.
+This file described how to get there. It now records what was actually built
+and how to operate it. For the story of the day it took, see `JOURNAL.md`.
 
 ---
 
-## 1. Hosted database (Neon)
+## What is running
 
-1. Go to **neon.tech** and sign in with GitHub or Google. The free tier is
-   enough.
-2. Create a project — name it `isha-sahayata`, region **AWS ap-southeast-1
-   (Singapore)** or whichever is closest to Coimbatore.
-3. On the project dashboard, copy the **connection string**. It looks like:
+| Piece | Where |
+| --- | --- |
+| Code | `github.com/srikanth-karamala/isha-sahayata`, private, branch `main` |
+| Hosting | Vercel, project `isha-sahayata` |
+| Database | Prisma Postgres, via the Vercel integration |
+| Model | Groq, key in Vercel's environment variables |
+| Photos | In Postgres, served by `/api/uploads/[id]` |
 
-   ```
-   postgresql://USER:PASSWORD@ep-xxx-xxx.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-   ```
+`isha-sahayata.vercel.app` is a **production alias**: it always points at the
+newest successful build of `main`, so the link never needs resharing.
 
-Paste that back here and I will run the migration and seed it. Do not commit
-it anywhere — it goes into `.env` locally and into Vercel's environment
-variables.
+Two longer URLs also work — `isha-sahayata-srikanth-karamala.vercel.app` and
+the `-git-main-` variant. Same deployment; prefer the short one.
 
----
+## How a change reaches the site
 
-## 2. Git remote
-
-Vercel deploys from a repository. There is no remote configured yet.
-
-1. On **github.com**, create a new repository named `isha-sahayata`.
-   **Make it private** — `ADMIN_PASSCODE` is a real passcode.
-   Do not add a README, licence or .gitignore; the repo already has them and
-   they would conflict.
-2. Then, from the project directory:
-
-   ```bash
-   git remote add origin git@github.com:<your-username>/isha-sahayata.git
-   git branch -M main
-   git push -u origin main
-   ```
-
-`.env` is gitignored, untracked and has never been committed — verified — so
-no secrets go up with it.
-
----
-
-## 3. Vercel
-
-1. Go to **vercel.com**, sign in with the same GitHub account.
-2. **Add New → Project**, and import `isha-sahayata`.
-3. Vercel detects Next.js on its own; leave the build settings alone.
-4. Before clicking Deploy, open **Environment Variables** and add three:
-
-   | Name | Value |
-   | --- | --- |
-   | `DATABASE_URL` | the Neon connection string from step 1 |
-   | `ADMIN_PASSCODE` | the same one in your local `.env` |
-   | `GROQ_API_KEY` | your Groq key (rotate it first — see below) |
-
-5. Deploy. The first build takes two or three minutes.
-
----
-
-## 4. Point the local app at Neon and migrate
-
-Once you have the connection string, replace `DATABASE_URL` in `.env` and run:
-
-```bash
-pnpm exec prisma migrate deploy      # creates every table
-pnpm exec prisma db seed             # the six hubs
-pnpm db:history                      # 60 cycles + 21 days of rides
+```
+edit → git commit → git push origin main
+                          ↓
+              GitHub notifies Vercel
+                          ↓
+      build: pnpm install → prisma generate → next build   (~2 min)
+                          ↓
+                 live at the alias
 ```
 
-Then the lost & found demo data and its AI-scored matches need regenerating
-against the new database, since those rows live in Postgres too.
+**Pushing is what deploys.** There is no separate step. To check whether a
+change has landed, open the Vercel **Deployments** tab: the newest entry
+should carry your commit message and be marked **Ready**.
 
-**Keep a copy of the local connection string.** Switching `.env` to Neon points
-local development at production data; switch it back when you want the local
-database again.
+Two things that do *not* work this way:
 
----
+- **Database content is not code.** Rows — lost & found reports, cycles,
+  confirmed facts written through the app — change the site immediately with
+  no deploy. But `lib/ashram-knowledge.ts` *is* code, so confirming a timing
+  there does need a push.
+- **Environment variables need a rebuild.** Changing `GROQ_API_KEY` or
+  `ADMIN_PASSCODE` in Vercel does nothing to the running site until the next
+  build. Redeploy after editing one, and untick "use existing build cache".
 
-## 5. Check it works
+## Environment variables
 
-On the deployed URL:
+| Name | Set by | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | the Prisma integration | Do not edit by hand |
+| `ADMIN_PASSCODE` | you | Currently `yellow123` — see the warning below |
+| `GROQ_API_KEY` | you | Rotated 21 September |
+| `NEXT_PUBLIC_ONBOARDING_ALWAYS` | you | `1` while demoing; remove for real use |
 
-- **`/`** — the map loads, hub pins show counts, the bottom nav works
-- **`/admin`** — asks for the passcode, then the Overview tab shows the morning
-  briefing with a **Groq** badge (not "Offline rules" — if it says that, the
-  `GROQ_API_KEY` variable did not take)
-- **Lost & Found tab** — the AI-scored pairs appear with their reasoning
-- **Report a fault with a photo** — this is the one that would have broken
-  before the storage change, so it is worth testing explicitly
+The Prisma integration also sets `POSTGRES_URL` and `PRISMA_DATABASE_URL`.
+Neither is used — the schema reads `DATABASE_URL`.
 
----
+Values are pasted raw. **No quotes**: `"gsk_..."` makes the quote marks part
+of the key.
 
-## 6. Before sharing the link
+## Two things that only fail in the cloud
 
-**Rotate the Groq key.** It was transmitted over an intercepted TLS connection
-during setup (see `HANDOFF.md`). Create a new one at console.groq.com, update
-it in Vercel's environment variables, and delete the old one.
+Both cost an afternoon on 21 September, and both are invisible locally.
 
-**Change `ADMIN_PASSCODE`** if the current one is used anywhere else.
+**`postinstall: prisma generate` in `package.json` is load-bearing.** Vercel
+installs into a fresh `node_modules`, so without it nothing generates the
+Prisma Client and `next build` fails on the first import of `@prisma/client`.
+It works locally only because the client was generated by an install months
+ago and has been sitting there since. Do not remove it.
 
----
+**Vercel's default function limit is 10 seconds, and it kills the request
+mid-flight** rather than returning an error — so the browser sees a promise
+that never settles rather than a failure it can report. `app/page.tsx` sets
+`maxDuration = 60` for the assistant's sake, and both Groq call sites carry
+`AbortSignal.timeout(45_000)` so a hanging upstream becomes a visible
+rejection.
 
-## Known limits of this deployment
+## The database
 
-- **Neon's free tier sleeps after inactivity.** The first request after a quiet
-  period takes a few seconds to wake the database. Open the link once before a
-  demo so it is warm.
-- **Groq's free tier allows about 1,000 requests a day.** Far beyond a demo, but
-  it is a shared key, so heavy use by several people at once could hit the
+Migrations and seeds run from a developer machine with `.env` pointed at the
+cloud database:
+
+```bash
+pnpm exec prisma migrate deploy   # applies the four migrations
+pnpm exec prisma db seed          # the six hubs and the fleet
+pnpm db:history                   # riders, rides and audit history
+```
+
+`pnpm db:history` writes thousands of rows one at a time. Against local Docker
+that is quick; over a network it takes several minutes and will look like it
+has hung. Let it finish.
+
+**`prisma/seed-history.ts` deletes lost & found rows and cannot recreate
+them.** The demo items — including the bottle/flask and spectacles/glasses
+pairs that demonstrate the matching — were entered by hand through the app.
+Running that script destroys them, and there is no seed to restore from. They
+were recovered once by copying from the local Docker database.
+
+Pointing `.env` at the cloud database also aims local development at
+production data. The local Docker connection string is kept commented on the
+line above it, so switching back is one edit.
+
+## Checking a deployment
+
+On the live URL:
+
+- **`/`** — the map loads, stands show counts, all four tabs work
+- **Ask Sahayata AI** — ask "when is dinner served?". It should answer plainly
+  (those timings are confirmed). The header should read "Answered by Groq"; if
+  the reply is "something went wrong reaching me", the key is not reaching the
+  deployment
+- **Info → Timings** — populated, with one "NOT CHECKED" chip on the daily
+  rituals
+- **`/admin`** — asks for the passcode, then the briefing should carry a
+  **Groq** badge rather than "Offline rules"
+- **Report a fault with a photo** — the path that would have broken before
+  photos moved into the database
+
+## Before this is used for real
+
+- **Change `ADMIN_PASSCODE`.** It is `yellow123` on a publicly reachable URL,
+  and the staff console can deploy cycles and close lost-property reports.
+- **Delete the old Groq key** at console.groq.com. It was replaced after being
+  sent over the ashram network's intercepted TLS connection; rotating only
+  helps once the old one is revoked.
+- **Remove `NEXT_PUBLIC_ONBOARDING_ALWAYS`**, or every visitor re-reads the
+  introduction on every launch and will stop reading it.
+
+## Known limits
+
+- **No authentication on the rider app.** Anyone with the link can use it, and
+  can find `/admin`, which only the passcode protects.
+- **Groq's free tier** allows roughly a thousand requests a day on a shared
+  key — ample for a pilot, but several people at once could hit the
   per-minute limit.
-- **The map tiles are bundled in the repository** (2.7 MB under `public/tiles`),
-  which is fine for Vercel but means the repo is not tiny.
+- **The map tiles are in the repository** (2.7 MB under `public/tiles`), which
+  Vercel serves happily but keeps the repo from being small.
+
+## The road not taken
+
+The original plan used **Neon** for Postgres. Prisma Postgres was chosen
+instead because it is created from inside the Vercel dashboard and sets
+`DATABASE_URL` itself — one account and one dashboard rather than two, which
+mattered more than any difference between the two databases. Either would
+work; the schema is ordinary Postgres.
+
+## Alternative: the ngrok tunnel
+
+Still useful for showing work in progress without deploying. See
+`DEMO-DAY.md`. It dies when the laptop sleeps, and **it cannot start on the
+ashram Wi-Fi at all** — that network intercepts TLS, and ngrok's agent
+deliberately refuses a re-signed certificate. A hotspot is the only fix;
+installing the proxy certificate does not help.
