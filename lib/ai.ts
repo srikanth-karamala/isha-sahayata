@@ -117,6 +117,11 @@ async function callGroq<T>(req: AiRequest): Promise<T | null> {
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
+    // Without this a hanging upstream call is indistinguishable from a slow
+    // one: the request never settles, the caller's catch never runs, and the
+    // chat sits on a spinner for ever. A rejection it can report beats
+    // silence.
+    signal: AbortSignal.timeout(45_000),
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
@@ -246,6 +251,9 @@ export async function askForText(
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
+      // Same reason as the other call site: a hang has to become a rejection,
+      // or the chat waits on a promise that never settles.
+      signal: AbortSignal.timeout(45_000),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
