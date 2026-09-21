@@ -2783,3 +2783,40 @@ body:has(.yc-phone-stage) {
   64%  { width: 13.2rem; }
   100% { width: 46px; }
 }
+
+/* A shuttle route's stops, in order. Wraps rather than scrolls: a route with
+   three stops should read as one sentence on a phone, not a filmstrip. */
+.yc-route-stops {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+}
+
+.yc-route-stops li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* Unconfirmed hours carry the same amber caution the Info tab uses for a
+   fact nobody has checked, so the two surfaces read alike. */
+.yc-route-hours {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--separator);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--primary-dark);
+}

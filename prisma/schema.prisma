@@ -67,10 +67,10 @@ enum AuditAction {
 }
 
 model User {
-  id         String   @id @default(uuid())
+  id         String          @id @default(uuid())
   name       String
-  phone      String   @unique
-  createdAt  DateTime @default(now())
+  phone      String          @unique
+  createdAt  DateTime        @default(now())
   heldCycles Cycle[]
   rides      Ride[]
   lostFound  LostFoundItem[]
@@ -90,17 +90,17 @@ model Cycle {
 
   /// AI triage of issueNotes (and the fault photo when present), written by
   /// lib/triage.ts on report. Null until a fault has been triaged.
-  faultCategory  FaultCategory?
-  faultSeverity  FaultSeverity?
+  faultCategory FaultCategory?
+  faultSeverity FaultSeverity?
   /// false = unsafe to ride; pull from service immediately.
-  safeToRide     Boolean?
-  faultSummary   String?
-  triagedAt      DateTime?
-  heldByUserId   String?
-  heldByUser     User?       @relation(fields: [heldByUserId], references: [id])
-  updatedAt      DateTime    @updatedAt
-  logs           AuditLog[]
-  rides          Ride[]
+  safeToRide    Boolean?
+  faultSummary  String?
+  triagedAt     DateTime?
+  heldByUserId  String?
+  heldByUser    User?          @relation(fields: [heldByUserId], references: [id])
+  updatedAt     DateTime       @updatedAt
+  logs          AuditLog[]
+  rides         Ride[]
 }
 
 model Ride {
@@ -141,14 +141,14 @@ model RidePathPoint {
 }
 
 model Hub {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  capacity  Int        @default(20)
+  id        String          @id @default(uuid())
+  name      String          @unique
+  capacity  Int             @default(20)
   latitude  Float?
   longitude Float?
   cycles    Cycle[]
-  startLogs AuditLog[] @relation("StartHub")
-  endLogs   AuditLog[] @relation("EndHub")
+  startLogs AuditLog[]      @relation("StartHub")
+  endLogs   AuditLog[]      @relation("EndHub")
   lostFound LostFoundItem[]
 }
 
@@ -171,14 +171,13 @@ model AuditLog {
   @@index([action, createdAt])
 }
 
-
 /// A lost or found report. One model for both directions: the only difference
 /// is `kind`, which keeps matching symmetrical — a LOST report is matched
 /// against FOUND entries and vice versa.
 model LostFoundItem {
-  id          String          @id @default(uuid())
-  kind        LostFoundKind
-  status      LostFoundStatus @default(OPEN)
+  id     String          @id @default(uuid())
+  kind   LostFoundKind
+  status LostFoundStatus @default(OPEN)
 
   /// What the person actually typed. Matching reads this, not the category.
   description String
@@ -190,19 +189,19 @@ model LostFoundItem {
 
   /// Where it was lost or found. Hub is optional — plenty of things go missing
   /// between stations.
-  hubId       String?
-  hub         Hub?            @relation(fields: [hubId], references: [id])
-  placeNote   String?
-  latitude    Float?
-  longitude   Float?
+  hubId     String?
+  hub       Hub?    @relation(fields: [hubId], references: [id])
+  placeNote String?
+  latitude  Float?
+  longitude Float?
 
   /// When it was lost or found, as reported — not when the row was created.
-  occurredAt  DateTime
+  occurredAt   DateTime
   reportedById String
-  reportedBy  User            @relation(fields: [reportedById], references: [id])
+  reportedBy   User     @relation(fields: [reportedById], references: [id])
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   matchesAsSource MatchSuggestion[] @relation("SourceItem")
   matchesAsTarget MatchSuggestion[] @relation("TargetItem")
@@ -214,25 +213,24 @@ model LostFoundItem {
 /// Stored rather than computed per request so staff see a stable list and the
 /// same pair is not re-scored on every page load.
 model MatchSuggestion {
-  id         String        @id @default(uuid())
-  sourceId   String
-  source     LostFoundItem @relation("SourceItem", fields: [sourceId], references: [id], onDelete: Cascade)
-  targetId   String
-  target     LostFoundItem @relation("TargetItem", fields: [targetId], references: [id], onDelete: Cascade)
+  id       String        @id @default(uuid())
+  sourceId String
+  source   LostFoundItem @relation("SourceItem", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId String
+  target   LostFoundItem @relation("TargetItem", fields: [targetId], references: [id], onDelete: Cascade)
 
   /// 0-100. Above 60 is surfaced to the person who reported the loss.
-  score      Int
+  score     Int
   /// One sentence on why these two look like the same object.
-  reasoning  String
+  reasoning String
   /// True when Claude scored it, false when the keyword fallback did.
-  byAi       Boolean       @default(false)
-  dismissed  Boolean       @default(false)
-  createdAt  DateTime      @default(now())
+  byAi      Boolean  @default(false)
+  dismissed Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   @@unique([sourceId, targetId])
   @@index([sourceId, score])
 }
-
 
 /// An uploaded photo, stored in the database rather than on disk.
 ///
@@ -249,4 +247,66 @@ model Upload {
   createdAt DateTime @default(now())
 
   @@index([folder, createdAt])
+}
+
+/// A place a shuttle stops. Separate from Hub: a cycle stand is inventory
+/// (docks, capacity, cycles held), a shuttle stop is only a named place a
+/// vehicle calls at. Some are the same physical spot — Bhiksha Hall has both
+/// — but conflating them would give every stop a capacity it does not have.
+///
+/// `latitude` and `longitude` are nullable on purpose. Only the six cycle
+/// stands have been surveyed; the shuttle stops are named in the ashram's
+/// published route list but nobody has recorded where they are. The list view
+/// works without them, and the map layer can be added the day they arrive
+/// without touching this model.
+model ShuttleStop {
+  id        String             @id @default(uuid())
+  name      String             @unique
+  /// Written on a noticeboard or said aloud — "the metal bridge near Bhiksha
+  /// Hall" is how people refer to one of these, and it is not a place name.
+  note      String?
+  latitude  Float?
+  longitude Float?
+  /// Where this stop sits on each route that calls at it.
+  calls     ShuttleRouteStop[]
+  createdAt DateTime           @default(now())
+}
+
+/// A fixed shuttle route. The five in use came from the ashram's published
+/// list and are confirmed; their running hours are not, which is why
+/// `hours` is nullable rather than carrying a guess.
+model ShuttleRoute {
+  id             String             @id @default(uuid())
+  name           String             @unique
+  /// BUGGY for the electric carts, BULLOCK for the bullock cart routes.
+  kind           ShuttleKind        @default(BUGGY)
+  /// "6:00am to 8:30pm", when someone has read it off the board. Null means
+  /// nobody has checked, and the interface says so rather than inventing one.
+  hours          String?
+  /// Set once the hours have been confirmed on site, mirroring the
+  /// convention in lib/ashram-knowledge.ts.
+  hoursCheckedAt DateTime?
+  stops          ShuttleRouteStop[]
+  createdAt      DateTime           @default(now())
+}
+
+/// A stop's place in a route's sequence. The join carries `position` because
+/// the order is the useful part — "which buggy takes me from Welcome Point to
+/// Shivapadam" is answered by two stops on one route, in order.
+model ShuttleRouteStop {
+  id       String       @id @default(uuid())
+  routeId  String
+  route    ShuttleRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stopId   String
+  stop     ShuttleStop  @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  position Int
+
+  @@unique([routeId, position])
+  @@unique([routeId, stopId])
+  @@index([stopId])
+}
+
+enum ShuttleKind {
+  BUGGY
+  BULLOCK
 }

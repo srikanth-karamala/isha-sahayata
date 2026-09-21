@@ -1,84 +1,156 @@
 'use client';
 
-import { Bus, Phone, MapPin } from 'lucide-react';
-import { ASHRAM_FACTS, CAMPUS_LANDMARKS } from '@/lib/ashram-knowledge';
+import { useEffect, useMemo, useState } from 'react';
+import { Bus, MapPin, Phone, ArrowRight, Clock } from 'lucide-react';
+import { getShuttleRoutes, type ShuttleRoute } from '@/app/shuttle-actions';
 
 /**
- * Ride — shuttles and lifts across the campus.
+ * Ride — the shuttles and bullock carts that cross the campus.
  *
- * NOT YET BUILT. This tab is deliberately a stub, and it is important that it
- * reads as one rather than as a broken feature.
+ * The question this answers is "which one do I take from where I am", so the
+ * default view is by starting point rather than by route name: you know where
+ * you are standing, and you may never have heard of "Welcome Point – Nalanda
+ * – Brahmaputra".
  *
- * The service needs a data model of its own (vehicles, stops, timings, and
- * possibly requests with an accept/assign step and a staff-side console) and
- * three product questions answered first: fixed-route timetable or on-demand
- * request; who drives; whether a request needs accepting. Guessing at those
- * would mean building the wrong thing twice.
- *
- * Meanwhile the two shuttle entries in `lib/ashram-knowledge.ts` are both
- * PLACEHOLDER — nobody has confirmed the hours, the route or the fare — so
- * there is no honest timetable to show. When someone confirms them the facts
- * appear here automatically, exactly as they do on the Info tab.
+ * The routes and their stops are confirmed, from the ashram's published list.
+ * The hours are not — nobody has read them off the board at the stand — so
+ * every route says so rather than showing a timetable nobody checked. That is
+ * the same rule the Info tab follows, and for the same reason: someone who
+ * waits at a stop for a service that stopped running an hour ago has been
+ * misled by the app.
  */
 export default function RidePanel() {
-  const shuttleFacts = ASHRAM_FACTS.filter(
-    (f) =>
-      f.verified !== 'PLACEHOLDER' &&
-      (f.topic === 'Shuttle and golf cart service' ||
-        f.topic === 'Shuttle pick-up and drop-off points')
-  );
+  const [routes, setRoutes] = useState<ShuttleRoute[] | null>(null);
+  const [from, setFrom] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getShuttleRoutes().then((r) => {
+      if (!cancelled) setRoutes(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Every stop that at least one route departs from or calls at. */
+  const stops = useMemo(() => {
+    if (!routes) return [];
+    const seen = new Map<string, number>();
+    for (const r of routes) {
+      for (const s of r.stops) seen.set(s.name, (seen.get(s.name) ?? 0) + 1);
+    }
+    // Busiest first: the stop serving most routes is the likeliest to be
+    // where someone is standing when they open this.
+    return [...seen.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [routes]);
+
+  const shown = useMemo(() => {
+    if (!routes) return [];
+    if (!from) return routes;
+    return routes.filter((r) => r.stops.some((s) => s.name === from));
+  }, [routes, from]);
 
   return (
     <div className="yc-sheet yc-info-panel">
       <div className="px-4 pt-3.5 pb-2">
         <p className="yc-eyebrow">Ride</p>
-        <h2 className="yc-title yc-title-md mt-1.5">Shuttles and lifts</h2>
+        <h2 className="yc-title yc-title-md mt-1.5">
+          {from ? `Leaving from ${from}` : 'Shuttles across the campus'}
+        </h2>
       </div>
 
+      {/* Filter by where you are. "All routes" first so the unfiltered view is
+          always one tap away rather than needing a cleared selection. */}
+      {stops.length > 0 && (
+        <div className="yc-info-tabs" role="tablist" aria-label="Starting point">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={from === null}
+            onClick={() => setFrom(null)}
+            className={`yc-info-tab${from === null ? ' is-active' : ''}`}
+          >
+            All routes
+          </button>
+          {stops.map(({ name }) => (
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              aria-selected={from === name}
+              onClick={() => setFrom(name)}
+              className={`yc-info-tab${from === name ? ' is-active' : ''}`}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="yc-info-body">
-        {shuttleFacts.length > 0 ? (
-          <ul className="yc-info-list">
-            {shuttleFacts.map((f) => (
-              <li key={f.topic} className="yc-info-card">
-                <p className="yc-title yc-title-sm">{f.topic}</p>
-                <p className="yc-body-sm mt-1.5">{f.detail}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
+        {routes === null ? (
+          <p className="yc-body-sm px-1">Loading routes…</p>
+        ) : shown.length === 0 ? (
           <div className="yc-info-empty">
             <Bus className="w-6 h-6 opacity-40" aria-hidden />
-            <p className="yc-title yc-title-sm mt-3">Coming soon</p>
-            <p className="yc-body-sm mt-2 max-w-[18rem]">
-              Booking a shuttle or asking for a lift across the campus will live
-              here. It is not ready yet.
-            </p>
-            <p className="yc-meta mt-2 max-w-[18rem]">
-              The shuttle hours and stops have not been confirmed on site, so
-              Sahayata would rather show nothing than a timetable that sends you
-              to the wrong place.
-            </p>
-            <a href="tel:+918300083111" className="yc-btn-ghost mt-3.5">
-              <Phone className="w-3.5 h-3.5" aria-hidden />
-              Ask the enquiry desk
-            </a>
+            <p className="yc-body-sm mt-2.5">No route calls at this stop.</p>
           </div>
-        )}
+        ) : (
+          <ul className="yc-info-list">
+            {shown.map((r) => (
+              <li key={r.id} className="yc-info-card">
+                <div className="flex items-start justify-between gap-2.5">
+                  <p className="yc-title yc-title-sm">{r.name}</p>
+                  {r.kind === 'BULLOCK' && (
+                    <span className="yc-info-chip" title="Bullock cart, not an electric buggy">
+                      Bullock
+                    </span>
+                  )}
+                </div>
 
-        <div className="yc-info-landmarks">
-          <p className="yc-eyebrow">In the meantime</p>
-          <p className="yc-meta mt-1 mb-2">
-            A yellow cycle is available at each of these stands.
-          </p>
-          <ul>
-            {CAMPUS_LANDMARKS.map((l) => (
-              <li key={l}>
-                <MapPin className="w-3.5 h-3.5 shrink-0 mt-[2px] opacity-55" aria-hidden />
-                <span>{l}</span>
+                {/* The stops in order, which is the answer to "does this one
+                    go where I am going". */}
+                <ol className="yc-route-stops">
+                  {r.stops.map((s, i) => (
+                    <li key={s.id}>
+                      <MapPin className="w-3.5 h-3.5 shrink-0 opacity-55" aria-hidden />
+                      <span className={s.name === from ? 'yc-strong' : undefined}>
+                        {s.name}
+                      </span>
+                      {i < r.stops.length - 1 && (
+                        <ArrowRight className="w-3 h-3 shrink-0 opacity-35" aria-hidden />
+                      )}
+                    </li>
+                  ))}
+                </ol>
+
+                <p className="yc-route-hours">
+                  <Clock className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden />
+                  <span>
+                    {r.hours && r.hoursChecked
+                      ? r.hours
+                      : 'Running hours not confirmed — ask at the stand or the Main Gate desk.'}
+                  </span>
+                </p>
               </li>
             ))}
           </ul>
-        </div>
+        )}
+
+        <p className="yc-info-foot">
+          <Phone className="w-3 h-3 shrink-0 mt-[2px] opacity-55" aria-hidden />
+          <span>
+            Routes are as published by the ashram. For today&rsquo;s running
+            times, the desk at Main Gate can help —{' '}
+            <a href="tel:+918300083111" className="yc-info-tel">
+              +91 83000 83111
+            </a>
+            .
+          </span>
+        </p>
       </div>
     </div>
   );
