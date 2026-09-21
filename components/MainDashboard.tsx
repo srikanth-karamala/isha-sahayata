@@ -732,15 +732,18 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
               it floats over; it widens to show its name on hover or focus,
               and always carries an accessible name for anyone who never
               sees the expansion. */}
-          {/* Reporting follows the rider for the same reason the assistant
-              does: a broken cycle is noticed while walking past one, which is
-              as likely to happen while reading the Info tab as while looking
-              at the map. It sits above the assistant and is quieter, because
-              asking a question is the commoner errand of the two.
+          {/* Cycles only. The assistant belongs on every tab because it
+              answers a question about whatever is on screen — a timing on
+              Info, an item on Lost & Found. Reporting does not: it is a
+              cycle action, and someone reading the ashram timings is not
+              halfway through a thought about a broken cycle. Spotting one
+              from another tab happens, but one tap to Cycles is no hardship,
+              and it does not justify a permanent control over three tabs
+              that have nothing to do with cycles.
 
-              Hidden while the report form is already open, so the control
-              does not float over the panel it just opened. */}
-          {!assistantOpen && !activeRide && !reportOpen && (
+              Also hidden while the form is open, so it does not float over
+              the panel it just opened. */}
+          {tab === 'cycles' && !assistantOpen && !activeRide && !reportOpen && (
             <button
               type="button"
               onClick={() => setReportOpen(true)}
