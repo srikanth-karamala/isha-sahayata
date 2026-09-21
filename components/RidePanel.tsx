@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Bus, MapPin, Phone, ArrowRight, Clock } from 'lucide-react';
+import { Bus, MapPin, ArrowRight, Clock } from 'lucide-react';
 import { getShuttleRoutes, type ShuttleRoute } from '@/app/shuttle-actions';
+import CabRequestPanel from './CabRequestPanel';
+import type { RiderIdentity } from '@/lib/rider-identity';
 
 /**
  * Ride — the shuttles and bullock carts that cross the campus.
@@ -19,7 +21,17 @@ import { getShuttleRoutes, type ShuttleRoute } from '@/app/shuttle-actions';
  * waits at a stop for a service that stopped running an hour ago has been
  * misled by the app.
  */
-export default function RidePanel() {
+export default function RidePanel({
+  userId,
+  riderName,
+  riderPhone,
+  onIdentityChange,
+}: {
+  userId: string | null;
+  riderName: string;
+  riderPhone: string;
+  onIdentityChange?: (identity: RiderIdentity) => void;
+}) {
   const [routes, setRoutes] = useState<ShuttleRoute[] | null>(null);
   const [from, setFrom] = useState<string | null>(null);
 
@@ -91,6 +103,19 @@ export default function RidePanel() {
       )}
 
       <div className="yc-info-body">
+        {/* One notice for the lot. The routes are confirmed from the ashram's
+            published list; the hours are not, and saying so once is more
+            likely to be read than saying it seven times. */}
+        {routes !== null && routes.some((r) => !r.hours || !r.hoursChecked) && (
+          <p className="yc-route-hours yc-route-hours-lead">
+            <Clock className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden />
+            <span>
+              Running hours have not been confirmed on site. The stand itself,
+              or the Main Gate desk, has today&rsquo;s times.
+            </span>
+          </p>
+        )}
+
         {routes === null ? (
           <p className="yc-body-sm px-1">Loading routes…</p>
         ) : shown.length === 0 ? (
@@ -127,30 +152,30 @@ export default function RidePanel() {
                   ))}
                 </ol>
 
-                <p className="yc-route-hours">
-                  <Clock className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden />
-                  <span>
-                    {r.hours && r.hoursChecked
-                      ? r.hours
-                      : 'Running hours not confirmed — ask at the stand or the Main Gate desk.'}
-                  </span>
-                </p>
+                {/* Only the routes whose hours someone has actually read off
+                    the board carry a line here. The rest are covered once, at
+                    the top — repeating the same caveat down seven cards
+                    trains people to stop reading it. */}
+                {r.hours && r.hoursChecked && (
+                  <p className="yc-route-hours">
+                    <Clock className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden />
+                    <span>{r.hours}</span>
+                  </p>
+                )}
               </li>
             ))}
           </ul>
         )}
 
-        <p className="yc-info-foot">
-          <Phone className="w-3 h-3 shrink-0 mt-[2px] opacity-55" aria-hidden />
-          <span>
-            Routes are as published by the ashram. For today&rsquo;s running
-            times, the desk at Main Gate can help —{' '}
-            <a href="tel:+918300083111" className="yc-info-tel">
-              +91 83000 83111
-            </a>
-            .
-          </span>
-        </p>
+        {/* Asking for a cab sits below the routes: a shuttle is the free
+            option most people want, and the cab is what you fall back to when
+            no route serves your errand. */}
+        <CabRequestPanel
+          userId={userId}
+          riderName={riderName}
+          riderPhone={riderPhone}
+          onIdentityChange={onIdentityChange}
+        />
       </div>
     </div>
   );

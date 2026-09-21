@@ -610,7 +610,12 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             ) : tab === 'info' ? (
               <AshramInfoPanel />
             ) : tab === 'ride' ? (
-              <RidePanel />
+              <RidePanel
+                userId={rider?.id ?? null}
+                riderName={rider?.name ?? ''}
+                riderPhone={rider?.phone ?? ''}
+                onIdentityChange={setRider}
+              />
             ) : tab === 'lost-found' ? (
               <LostFoundPanel
                 userId={rider?.id ?? null}

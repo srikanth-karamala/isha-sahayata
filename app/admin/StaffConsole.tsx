@@ -2,10 +2,10 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Bike, Search, ArrowLeft, LogOut } from 'lucide-react';
+import { LayoutDashboard, Bike, Search, Car, ArrowLeft, LogOut } from 'lucide-react';
 import { adminLogout } from './auth-actions';
 
-export type StaffTab = 'overview' | 'cycles' | 'lost-found';
+export type StaffTab = 'overview' | 'cycles' | 'lost-found' | 'cabs';
 
 /**
  * Shell for the staff console: a sidebar rail, a greeting header, and the panel
@@ -24,16 +24,20 @@ export default function StaffConsole({
   maintenanceCount,
   unsafeCount,
   lostFoundCount,
+  cabCount,
   overview,
   cycles,
   lostFound,
+  cabs,
 }: {
   maintenanceCount: number;
   unsafeCount: number;
   lostFoundCount: number;
+  cabCount: number;
   overview: ReactNode;
   cycles: ReactNode;
   lostFound: ReactNode;
+  cabs: ReactNode;
 }) {
   const [tab, setTab] = useState<StaffTab>('overview');
 
@@ -58,12 +62,22 @@ export default function StaffConsole({
       Icon: Search,
       count: lostFoundCount || undefined,
     },
+    {
+      id: 'cabs',
+      label: 'Cabs',
+      Icon: Car,
+      count: cabCount || undefined,
+      // A cab request is someone waiting, often with luggage and a train to
+      // catch, so an outstanding one is flagged rather than merely counted.
+      alert: cabCount > 0,
+    },
   ];
 
   const panels: Record<StaffTab, ReactNode> = {
     overview,
     cycles,
     'lost-found': lostFound,
+    cabs,
   };
 
   const heading: Record<StaffTab, { title: string; blurb: string }> = {
@@ -78,6 +92,10 @@ export default function StaffConsole({
     'lost-found': {
       title: 'Lost & Found',
       blurb: 'Open reports and the pairs the matcher thinks describe one object.',
+    },
+    cabs: {
+      title: 'Cabs',
+      blurb: 'People waiting for a lift, across the campus or out of it.',
     },
   };
 

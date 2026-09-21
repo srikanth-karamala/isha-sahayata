@@ -12,6 +12,8 @@ import AdminClient from './AdminClient';
 import FleetInsights from '@/components/FleetInsights';
 import StaffConsole from './StaffConsole';
 import LostFoundBoard from './LostFoundBoard';
+import CabBoard from './CabBoard';
+import { getCabRequests } from '@/app/cab-actions';
 
 export const revalidate = 0;
 
@@ -27,6 +29,7 @@ export default async function AdminPage() {
     balances,
     lfSummary,
     feed,
+    cabRequests,
   ] = await Promise.all([
     getMaintenanceCycles(),
     getHubs(),
@@ -38,6 +41,7 @@ export default async function AdminPage() {
     getHubBalances(),
     getLostFoundSummary(),
     getOpenFeed(40),
+    getCabRequests(40),
   ]);
 
   // Depends on the aggregates above, so it runs after them.
@@ -66,6 +70,12 @@ export default async function AdminPage() {
           initialLiveRides={liveRides}
         />
       }
+      cabCount={
+        cabRequests.filter(
+          (r) => r.status === 'REQUESTED' || r.status === 'ACCEPTED'
+        ).length
+      }
+      cabs={<CabBoard requests={cabRequests} />}
       lostFound={
         <LostFoundBoard
           feed={feed}

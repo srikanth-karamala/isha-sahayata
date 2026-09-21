@@ -67,13 +67,14 @@ enum AuditAction {
 }
 
 model User {
-  id         String          @id @default(uuid())
-  name       String
-  phone      String          @unique
-  createdAt  DateTime        @default(now())
-  heldCycles Cycle[]
-  rides      Ride[]
-  lostFound  LostFoundItem[]
+  id          String          @id @default(uuid())
+  name        String
+  phone       String          @unique
+  createdAt   DateTime        @default(now())
+  heldCycles  Cycle[]
+  rides       Ride[]
+  lostFound   LostFoundItem[]
+  cabRequests CabRequest[]
 }
 
 model Cycle {
@@ -309,4 +310,47 @@ model ShuttleRouteStop {
 enum ShuttleKind {
   BUGGY
   BULLOCK
+}
+
+/// Someone asking for a cab, either across the campus or out to the airport
+/// or station.
+///
+/// A request, not a booking. Nothing here dispatches a vehicle — it puts the
+/// ask in front of the staff console so a person can act on it, which is why
+/// the rider's confirmation screen says what was sent rather than implying a
+/// cab is on its way.
+///
+/// Statuses follow LostFoundItem's example: the row is never deleted, so
+/// there is a record of who asked for what, and the day's history stays
+/// readable at the desk.
+model CabRequest {
+  id            String           @id @default(uuid())
+  requestedById String
+  requestedBy   User             @relation(fields: [requestedById], references: [id])
+  pickup        String
+  destination   String
+  /// Null means as soon as possible, rather than a time someone chose.
+  whenAt        DateTime?
+  scope         CabScope         @default(INSIDE)
+  status        CabRequestStatus @default(REQUESTED)
+  /// Anything the rider added — luggage, a companion who cannot walk far.
+  note          String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([status, createdAt])
+}
+
+enum CabScope {
+  /// A hop across the campus.
+  INSIDE
+  /// Out to the airport, the railway station or the city.
+  OUTSIDE
+}
+
+enum CabRequestStatus {
+  REQUESTED
+  ACCEPTED
+  COMPLETED
+  CANCELLED
 }
