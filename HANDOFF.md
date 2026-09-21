@@ -220,6 +220,20 @@ had none, so the only ways out of a half-filled form were to send it or switch
 tabs — a dead end on the screen a rider is most likely to open by mistake.
 `.yc-panel-close` exists to be reused by any later panel of that kind.
 
+**A tab shows a count only when the count is about that tab.** Ride and Info
+have none of their own, so the header stat block renders nothing there —
+divider included, because an empty column with a rule beside it reads as
+something failing to load — and the island takes a `quiet` mode that names
+the app instead. The rule was already written above the header stat logic
+and only covered Report and Lost & Found; the two newer tabs fell through to
+the cycle count by omission. Worth checking whenever a tab is added.
+
+**The splash holds until `showOnboarding` is no longer null**, not merely
+until its own timer ends. That state starts null and is set once
+localStorage has been read, so releasing the splash on the timer alone left
+a gap with neither screen rendered and the app visible behind them. Worst
+under `prefers-reduced-motion`, where the splash exits immediately.
+
 ---
 
 ## Traps that cost time
