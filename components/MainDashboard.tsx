@@ -241,13 +241,22 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
         ? 'report'
         : tab === 'lost-found'
           ? 'lost-found'
-          : 'idle';
+          // Same rule as the header stat: Ride and Info have no count of
+          // their own, so the island names the app rather than reporting
+          // cycles the reader is not looking at.
+          : tab === 'ride' || tab === 'info'
+            ? 'quiet'
+            : 'idle';
 
   // The header stat block follows the same rule as the island: on a tab that is
   // not about cycles, a cycle count and a "near you" distance are numbers the
   // reader cannot act on. An active ride keeps the cycle framing on every tab,
   // because getting the cycle back is then the only task that matters.
-  const headerStat: { value: number | string; caption: string; detail?: string } =
+  // Ride and Info have no count of their own, and a cycle count there is a
+  // number about somewhere else. Null renders nothing rather than something
+  // irrelevant — the two tabs were added after this rule was written and
+  // fell through to the cycle count by omission.
+  const headerStat: { value: number | string; caption: string; detail?: string } | null =
     !activeRide && reportOpen
       ? {
           value: faultsReported,
@@ -260,11 +269,13 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
             caption: 'handed in',
             detail: itemsWaiting > 0 ? 'awaiting claim' : 'nothing yet',
           }
-        : {
-            value: headerReady,
-            caption: origin ? 'near you' : 'ready',
-            detail: origin ? headerMeta : undefined,
-          };
+        : !activeRide && (tab === 'ride' || tab === 'info')
+          ? null
+          : {
+              value: headerReady,
+              caption: origin ? 'near you' : 'ready',
+              detail: origin ? headerMeta : undefined,
+            };
 
   const confirmNearDrop = async () => {
     if (!activeRide || !rider || !dropTarget) return;
@@ -412,20 +423,24 @@ export default function MainDashboard({ initialHubs }: { initialHubs: HubSummary
                 <p className="yc-eyebrow">Isha Yoga Center</p>
                 <h1 className="yc-display text-[19px] truncate mt-0.5">Isha Sahayata</h1>
               </div>
-              <div className="text-right shrink-0 pl-2.5 border-l border-[var(--separator)] max-w-[7.5rem]">
-                <p className="yc-title yc-title-sm tabular-nums leading-none">
-                  {headerStat.value}
-                </p>
-                <p className="yc-meta mt-1 truncate">{headerStat.caption}</p>
-                {headerStat.detail && (
-                  <p
-                    className="yc-meta mt-0.5 truncate opacity-80"
-                    title={headerStat.detail}
-                  >
-                    {headerStat.detail}
+              {/* The whole block goes, divider included — an empty column
+                  with a rule beside it reads as something failing to load. */}
+              {headerStat && (
+                <div className="text-right shrink-0 pl-2.5 border-l border-[var(--separator)] max-w-[7.5rem]">
+                  <p className="yc-title yc-title-sm tabular-nums leading-none">
+                    {headerStat.value}
                   </p>
-                )}
-              </div>
+                  <p className="yc-meta mt-1 truncate">{headerStat.caption}</p>
+                  {headerStat.detail && (
+                    <p
+                      className="yc-meta mt-0.5 truncate opacity-80"
+                      title={headerStat.detail}
+                    >
+                      {headerStat.detail}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Scan sits in the header and the assistant took its place at
                   the foot of the sheet. Gated to the cycles tab, and hidden

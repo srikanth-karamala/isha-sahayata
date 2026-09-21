@@ -15,7 +15,11 @@ export type IslandMode =
   | 'riding'
   | 'near-drop'
   | 'report'
-  | 'lost-found';
+  | 'lost-found'
+  /** Ride and Info: tabs with no count of their own, where a cycle count
+   *  would be a number about somewhere else. The island stays, because it
+   *  is the app's fixed furniture, but it names the app instead. */
+  | 'quiet';
 
 interface DynamicIslandProps {
   mode: IslandMode;
@@ -101,7 +105,9 @@ export default function DynamicIsland({
             ? itemsWaiting > 0
               ? `${itemsWaiting} handed in`
               : 'Nothing handed in yet'
-            : `${readyCount} ready`;
+            : mode === 'quiet'
+              ? 'Isha Sahayata'
+              : `${readyCount} ready`;
 
   return (
     <div
