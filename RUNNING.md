@@ -166,6 +166,62 @@ the app.
 
 ---
 
+## Disk space
+
+The project folder is about **760 MB**, of which the code you write is
+under **600 KB**. Everything else is dependencies and build output, and all
+of it regenerates.
+
+| | Size | Regenerates with |
+| --- | --- | --- |
+| `node_modules` | ~720 MB | `pnpm install` (a few minutes) |
+| `.next` | ~20 MB clean, grows to ~680 MB | `pnpm build` (~2 minutes) |
+| `.git` | ~12 MB | Nothing — this is the history, never delete it |
+| `public` | 3.5 MB | Nothing — the campus map tiles live here |
+
+Docker adds about 600 MB for the `postgres:16-alpine` image and 227 MB of
+volumes. The image is shared and needed; the volume `yellow_cycle_pg` **is
+the local database** and deleting it destroys the local data.
+
+### What grows, and why
+
+**`.next/dev` is the one to watch.** Running `pnpm dev` leaves dev-server
+artefacts behind, and they accumulate — on 21 September that directory alone
+was 423 MB while `.next/cache` held another 234 MB, both from sessions days
+earlier. Clearing them took `.next` from 677 MB to 21 MB.
+
+```bash
+rm -rf .next/dev .next/cache
+```
+
+Safe to run while the app is serving: the running server holds its own files
+open, and these are rebuilt on the next build.
+
+`rm -rf .next` entirely is also safe — it is pure build output — but the next
+start then needs a full `pnpm build` first.
+
+### What not to delete
+
+- **`.git`** — the history, and the only copy of anything not pushed.
+- **The `yellow_cycle_pg` Docker volume** — the local database. The lost &
+  found demo rows in particular were entered by hand and exist in no seed
+  file; see the warning in `DEPLOY.md`.
+- **`public/tiles`** — 2.7 MB of campus satellite imagery, bundled so the map
+  works without an external tile service or an API key.
+- **Other projects' containers.** `docker system prune -a` reclaims a lot and
+  will happily remove images and containers belonging to work that has
+  nothing to do with this app. Prefer naming what you remove.
+
+### Checking
+
+```bash
+du -sh .                          # the whole project
+du -sh node_modules .next .git    # where it went
+docker system df                  # images, containers, volumes
+```
+
+---
+
 ## If you are setting this up on a different machine
 
 The Docker container does not exist there yet. The project has a

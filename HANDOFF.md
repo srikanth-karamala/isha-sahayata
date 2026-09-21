@@ -514,7 +514,7 @@ Pushing to `main` deploys; see the Deployment section above.
 | File | What it is for |
 | --- | --- |
 | `README.md` | What the product does and the rider/staff flows. Predates this session; still accurate on the cycles side. |
-| `RUNNING.md` | How to start the app day to day, and what to do when it will not start. Every command in it was run before being written down. |
+| `RUNNING.md` | How to start the app day to day, what to do when it will not start, and what the project's disk use is made of. Every command in it was run before being written down. |
 | `DEPLOY.md` | What is deployed and how to operate it: the pipeline, the environment variables, the two failures that only happen in the cloud, and what to change before real use. |
 | `ASHRAM-FACTS-TODO.md` | The twelve unconfirmed ashram facts, grouped by which desk or noticeboard answers them. Generated from `lib/ashram-knowledge.ts`. |
 | `DEMO-DAY.md` | Running a demo off the ngrok tunnel: the link, how to restart it, what to show, and what will look like a bug but is not. |
