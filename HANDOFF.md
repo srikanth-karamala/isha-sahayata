@@ -421,5 +421,6 @@ repository private while `ADMIN_PASSCODE` is anything real.
 | `DEPLOY.md` | Getting it onto a public URL: Neon, GitHub, Vercel. Not started — no git remote, no accounts. Budget an hour, and do it on the hotspot. |
 | `ASHRAM-FACTS-TODO.md` | The twelve unconfirmed ashram facts, grouped by which desk or noticeboard answers them. Generated from `lib/ashram-knowledge.ts`. |
 | `DEMO-DAY.md` | Running a demo off the ngrok tunnel: the link, how to restart it, what to show, and what will look like a bug but is not. |
+| `JOURNAL.md` | What happened across 19-21 September, in order: the decisions, the bugs and what each one taught. Read this to understand how the app got here. |
 | `NEXT-SESSION.md` | Scope agreed for the introduction and the two new tabs, and what is still needed from Srikanth. |
 | `HANDOFF.md` | This file — why things are the way they are, and what is still open. |
