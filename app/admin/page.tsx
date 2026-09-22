@@ -1,15 +1,16 @@
-import { getActiveRides, getHubs, getMaintenanceCycles, getTodayStats } from '@/app/actions';
 import {
-  getFleetSummary,
-  getHourlyDemand,
-  getHubBalances,
-  getTodayDemand,
-} from '@/lib/analytics';
+  getActiveRides,
+  getHubs,
+  getMaintenanceCycles,
+  getRepairQueue,
+  getTodayStats,
+} from '@/app/actions';
+import { getFleetSummary, getHourlyDemand, getHubBalances } from '@/lib/analytics';
 import { generateBriefing } from '@/lib/briefing';
 import { getLostFoundSummary, getOpenFeed } from '@/app/lost-found-actions';
 import { activeProvider } from '@/lib/ai';
 import AdminClient from './AdminClient';
-import FleetInsights from '@/components/FleetInsights';
+import Overview from './Overview';
 import StaffConsole from './StaffConsole';
 import LostFoundBoard from './LostFoundBoard';
 import CabBoard from './CabBoard';
@@ -24,11 +25,11 @@ export default async function AdminPage() {
     stats,
     liveRides,
     summary,
-    demand,
     avgDemand,
     balances,
     lfSummary,
     feed,
+    repairs,
     cabRequests,
   ] = await Promise.all([
     getMaintenanceCycles(),
@@ -36,17 +37,17 @@ export default async function AdminPage() {
     getTodayStats(),
     getActiveRides(),
     getFleetSummary(),
-    getTodayDemand(),
     getHourlyDemand(),
     getHubBalances(),
     getLostFoundSummary(),
     getOpenFeed(40),
+    getRepairQueue(40),
     getCabRequests(40),
   ]);
 
-  // Depends on the aggregates above, so it runs after them.
-  // The briefing reasons about the campus rhythm, so it gets the 14-day
-  // average; the chart shows today, which is what staff watch change.
+  // Depends on the aggregates above, so it runs after them. The briefing
+  // reasons about the campus rhythm, so it gets the 14-day average rather
+  // than today alone.
   const briefing = await generateBriefing(summary, balances, avgDemand);
 
   return (
@@ -55,12 +56,7 @@ export default async function AdminPage() {
       unsafeCount={summary.unsafeCycles}
       lostFoundCount={lfSummary.openLost + lfSummary.openFound}
       overview={
-        <FleetInsights
-          summary={summary}
-          hubs={balances}
-          demand={demand}
-          briefing={briefing}
-        />
+        <Overview summary={summary} briefing={briefing} repairs={repairs} />
       }
       cycles={
         <AdminClient

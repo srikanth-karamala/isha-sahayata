@@ -1506,7 +1506,12 @@ body {
     margin-top: 0; margin-left: auto; flex-direction: row;
   }
   .yc-staff .s-side-foot .s-btn span { display: none; }
-  .yc-staff .s-main { padding: 18px 16px 40px; }
+  /* Clears the fixed tab bar below. Without the taller bottom padding the
+     bar sits on top of the last card — on the Overview it covered the
+     "Unsafe to ride" count, which is the one number that must not be hidden. */
+  .yc-staff .s-main {
+    padding: 18px 16px calc(84px + env(safe-area-inset-bottom, 0px));
+  }
 
   .yc-staff .s-tabs {
     position: fixed; left: 12px; right: 12px;

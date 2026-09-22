@@ -461,6 +461,44 @@ export async function getMaintenanceCycles() {
   });
 }
 
+/**
+ * Cycles out of service, newest report first — the staff Overview queue.
+ *
+ * Deliberately a different order from `getMaintenanceCycles`, which sorts by
+ * danger so the most urgent repair is worked on first. That is the right order
+ * for the Cycles tab, where someone is choosing what to fix. Overview answers a
+ * different question — what has just come in — so it is newest first, and the
+ * severity is shown on each row rather than encoded in the position.
+ *
+ * A fault lives on the cycle row and is overwritten by the next report, so
+ * `updatedAt` is the time of the current fault and there is no history of
+ * previous ones. Recording each report as its own row, with the rider who
+ * raised it, would need a fault-report table; this reads what exists today.
+ */
+export async function getRepairQueue(limit = 40) {
+  const cycles = await prisma.cycle.findMany({
+    where: { status: 'MAINTENANCE' },
+    include: { currentHub: true },
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+  });
+
+  return cycles.map((c) => ({
+    id: c.id,
+    qrCode: c.qrCode,
+    // The AI summary when triage ran, the rider's own words when it did not.
+    // Never both: staff reading a queue want one line per cycle.
+    summary: c.faultSummary ?? c.issueNotes,
+    notes: c.issueNotes,
+    severity: c.faultSeverity,
+    category: c.faultCategory,
+    safeToRide: c.safeToRide,
+    photoUrl: c.issuePhotoUrl,
+    hubName: c.currentHub?.name ?? null,
+    reportedAt: c.updatedAt,
+  }));
+}
+
 export async function pingRideTrack(
   qrCode: string,
   userId: string,
