@@ -71,7 +71,7 @@ Two things that do *not* work this way:
 | Name | Set by | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | the Prisma integration | Do not edit by hand |
-| `ADMIN_PASSCODE` | you | Currently `yellow123` — see the warning below |
+| `ADMIN_PASSCODE` | you | Set your own. Never the example value — see below |
 | `GROQ_API_KEY` | you | Rotated 21 September |
 | `NEXT_PUBLIC_ONBOARDING_ALWAYS` | you | `1` while demoing; remove for real use |
 
@@ -141,7 +141,7 @@ On the live URL:
 
 ## Before this is used for real
 
-- **Change `ADMIN_PASSCODE`.** It is `yellow123` on a publicly reachable URL,
+- **Change `ADMIN_PASSCODE`.** The staff console is on a publicly reachable URL,
   and the staff console can deploy cycles and close lost-property reports.
 - **Delete the old Groq key** at console.groq.com. It was replaced after being
   sent over the ashram network's intercepted TLS connection; rotating only

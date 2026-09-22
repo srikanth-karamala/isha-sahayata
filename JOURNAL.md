@@ -342,7 +342,7 @@ deployments page to confirm.
    tracking them.
 3. **Three ashram facts remain placeholders**, and the daily ritual times are
    the one real gap. `ASHRAM-FACTS-TODO.md` lists what to ask and where.
-4. **`ADMIN_PASSCODE` is `yellow123`** on a publicly reachable URL.
+4. **`ADMIN_PASSCODE` was left at the example value** on a publicly reachable URL.
 5. **The old Groq key** wants deleting at console.groq.com. Rotating only
    helps once the old one is revoked.
 

@@ -89,12 +89,12 @@ pnpm dev
 ```
 
 - Rider app: [http://localhost:3000](http://localhost:3000) (or the port Next prints; this machine often uses **3001** if 3000 is taken)
-- Staff: `/admin` — passcode from `.env` → `ADMIN_PASSCODE` (default in local `.env`: `yellow123`)
+- Staff: `/admin` — passcode from `.env` → `ADMIN_PASSCODE` (set your own; never ship the example value)
 - Sample QR codes from seed: `ISHA-CYC-101` … `ISHA-CYC-106` (`ISHA-CYC-103` starts in `MAINTENANCE`)
 
 ```env
 DATABASE_URL="postgresql://yellow:yellow@127.0.0.1:5434/yellow_cycle?schema=public"
-ADMIN_PASSCODE="yellow123"
+ADMIN_PASSCODE="change-me-before-deploying"
 ```
 
 Regenerate campus satellite tiles (optional):

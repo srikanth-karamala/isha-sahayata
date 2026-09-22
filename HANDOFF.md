@@ -595,9 +595,19 @@ nothing to total.
 
 **Before this is used for real:**
 
-- **`ADMIN_PASSCODE` is `yellow123`** on a publicly reachable URL. The staff
-  console can deploy cycles and close lost-property reports, and `.env.example`
-  itself says to change it before deploying.
+- **`ADMIN_PASSCODE` must be rotated before this repository is made public.**
+  It was left at the example value, and that value appeared in five tracked
+  documents — removed from the working tree on 22 September, but present in
+  every one of the 83 commits behind it and not removable without rewriting
+  all of them.
+
+  **Rotating the live passcode is the fix; scrubbing history is not.** Once
+  the deployed value differs, the string in these commits unlocks nothing. A
+  history rewrite would destroy the commit record that documents how this app
+  was built, to hide a word that no longer works. Set the new value in Vercel
+  (`vercel env rm ADMIN_PASSCODE production`, then `vercel env add`) and
+  redeploy. The staff console can deploy cycles and close lost-property
+  reports, so this is real access, not a formality.
 - **The old Groq key wants deleting** at console.groq.com. It was replaced
   after being sent over the intercepted TLS connection during setup; rotating
   only helps once the old one is revoked.
