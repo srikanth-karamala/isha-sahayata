@@ -236,6 +236,39 @@ under `prefers-reduced-motion`, where the splash exits immediately.
 
 ---
 
+## Decisions from the 22 September session
+
+**The staff Overview shows a repair queue, not charts.** It opened with a
+demand chart and six hub capacity bars. Both were honest and neither helped: on
+a quiet campus the chart was a flat line along zero and the hub bars read
+"Healthy" six times. It is now three counts — running, in repair, unsafe to
+ride — over the cycles that are out of service, newest report first, laid out
+like the Lost & Found board because the two pages answer the same shape of
+question. The morning briefing stays; a model naming two or three actions is
+advice rather than decoration.
+
+**The Overview queue is newest-first while the Cycles tab stays danger-first.**
+These orders disagree on purpose. Overview asks *what has just come in*, the
+Cycles tab asks *what to fix next*, so a bell reported an hour ago can sit
+above a brake failure from Tuesday. Severity is on every row either way. If
+this is ever "corrected" to one order, decide which question the page answers
+first.
+
+**There is no repair-ticket history, and the Overview does not pretend
+otherwise.** A fault lives on the `Cycle` row and is overwritten by the next
+report, so `updatedAt` is the time of the *current* fault and nothing records
+who raised it. That is why rows carry no reporter name or phone the way Lost &
+Found rows do. Real tickets would need a `FaultReport` table, the report flow
+rewired, and a migration — considered and deliberately not done for a list
+view.
+
+**Fault photos reach the staff pages and this was verified, not assumed.** The
+chain is `saveUploadDataUrl` → `Upload` row → `/api/uploads/<id>` →
+`issuePhotoUrl` → `getRepairQueue` → the `Thumb` in the row. Checked by
+measuring `naturalWidth > 0` on the rendered thumbnails rather than by looking
+at the markup: an `<img>` whose source 404s still renders as an element, so
+counting tags proves nothing.
+
 ## Traps that cost time
 
 **Prisma client goes stale.** After `prisma migrate`, a running dev server still
@@ -307,6 +340,90 @@ not have.
 
 ---
 
+## Three faults that looked like one (22 September)
+
+"No AI pairings on the deployed Lost & Found board" turned out to be three
+unrelated faults stacked on top of each other. Each alone would have produced a
+different symptom; together they read as a single mystery, and the first two
+theories in this file were both wrong. Worth reading before diagnosing anything
+else on this project.
+
+### 1. Rows inserted around the app never get their AI work done
+
+Match suggestions are written by `createReport` in `app/lost-found-actions.ts`,
+at the moment a report is submitted. **An `INSERT` straight into
+`LostFoundItem` therefore produces a report that has never been scored**, and
+the board correctly shows nothing to pair. The same goes for the photo and the
+AI-written title: all three are side effects of going through the app.
+
+The tell was in the timestamps, not the code. Ten reports created inside a
+four-second burst (`06:24:01`→`06:24:05`) with `occurredAt` spaced on an exact
+seven-hour grid is a script; the one report genuinely filed through the app had
+`createdAt` and `occurredAt` equal to the millisecond. **When data looks wrong,
+read its timestamps before reading the query** — the shape of the writes
+identifies the writer.
+
+`pnpm db:backfill-matches` exists for this. It runs the same matcher over
+reports that have no suggestions yet, is a dry run unless given `--write`, only
+ever upserts, and skips already-scored reports so a re-run is free. It also
+paces its calls: scoring every report back-to-back exhausts Groq's free tier
+(8,000 tokens per minute) after a handful, and the first attempt left the board
+half-filled. When no model answers it **skips the report and says so** rather
+than storing a score nothing produced.
+
+### 2. The deploy pipeline had been dead for a day
+
+Every push after the cab and shuttle work failed to build, so Vercel kept
+serving the last good build from 21 September and the site looked frozen. See
+the corrected `prisma generate` note under "Two things that only fail in the
+cloud" — pnpm 11 had silently stopped running `postinstall`.
+
+**The trap that cost the most time: `vercel ls` lists deployments newest
+first, and the three `● Ready` rows at the top were all 23 hours old.** Reading
+the status without reading the age said the pipeline was healthy when it had
+been broken all day. Always check the age column.
+
+### 3. Migrations are not applied by the build
+
+With the build finally passing, `/admin` returned 500:
+`The table public.CabRequest does not exist` (P2021). Vercel builds the code;
+**nothing applies migrations to the production database.** They are run by hand
+from a developer machine:
+
+```bash
+export DATABASE_URL=$(grep '^DATABASE_URL=' .env.production.local | sed 's/^DATABASE_URL=//; s/^"//; s/"$//')
+npx prisma migrate deploy
+```
+
+`npx prisma migrate status` against the same URL says what is pending. Without
+the explicit `DATABASE_URL`, Prisma reads `.env` — which points at **local
+Docker** — and the migration silently lands on the wrong database.
+
+So a schema change is two steps, not one: push the code, then deploy the
+migration. Only the rider app survives the gap; any page querying a new table
+returns 500 until the second step runs.
+
+### Reaching production to diagnose it
+
+`.env.production.local` comes from
+`npx vercel env pull --environment=production` after
+`vercel link --project isha-sahayata`. It holds a live production database URL,
+is gitignored, and is worth deleting when an investigation is over.
+
+Two things to know about that CLI. `vercel link --yes` **creates a new project
+named after the directory** rather than linking to the existing one — pass
+`--project isha-sahayata` explicitly. And `vercel env pull` cannot retrieve
+Secret-type variables (`GROQ_API_KEY` and `ADMIN_PASSCODE` come back as
+`[SENSITIVE]`); only Config-type ones such as `DATABASE_URL` arrive intact,
+which is enough to query the database while the model key comes from `.env`.
+
+The staff console can be read without a browser: its gate is a cookie whose
+value is the passcode itself, so
+`curl -H "Cookie: yc_admin_session=<passcode>" .../admin` returns the rendered
+page, and the RSC payload inside it shows exactly what the server sent.
+
+---
+
 ## Data
 
 Everything in the database is generated. Nothing came from a real person.
@@ -352,12 +469,26 @@ demoing.
 
 ### Two things that only fail in the cloud
 
-**`postinstall: prisma generate` is load-bearing.** Vercel installs into a
-fresh `node_modules`, so without it nothing generates the Prisma Client and
-`next build` fails on the first import of `@prisma/client`. It works locally
-only because the client was generated by an install months ago and has been
-sitting there since — which is why this surfaced on the first deploy rather
-than in development. Do not remove it.
+**The Prisma Client must be generated by the build, not only by install.**
+Vercel installs into a fresh `node_modules`, so something has to run
+`prisma generate` or `next build` fails on the first import of
+`@prisma/client`. `postinstall` used to be that something, and on 22 September
+it stopped being enough: **pnpm 10 and later do not run dependency build
+scripts unless the project names them**, and this project is on pnpm 11, so
+`postinstall` was skipped in silence. Nothing warned, because a skipped build
+script is not an error — the install simply finished in under a second
+(`Done in 987ms using pnpm v11.20.0`) and went straight to the build.
+
+`build` is therefore `prisma generate && next build`. Generating there puts it
+where it cannot be skipped, and where a failure to generate stops the deploy
+instead of producing a client missing half the schema. Do not reduce this back
+to `next build`.
+
+There is also a `pnpm.onlyBuiltDependencies` field in `package.json` naming the
+prisma packages. It was added as a belt-and-braces restoration of `postinstall`
+and **pnpm 11 ignores it**, warning that the setting moved to
+`pnpm-workspace.yaml`. Harmless, currently inert, and worth either moving or
+deleting rather than trusting.
 
 **Vercel's default function limit is 10 seconds, and it kills the request
 mid-flight** rather than returning an error, so the client sees a promise that
@@ -411,6 +542,12 @@ kilometres out, and the app refuses to quote a distance from a fix it does not
 believe. On a phone on the campus, real distances appear. See the 441 km trap
 above.
 
+**The local database has ten cycles in maintenance and three flat-colour fault
+photos.** Put there on 22 September to photograph the repair queue with rows in
+it, since production had none. The photos are plain coloured PNGs of a few
+hundred bytes — obviously illustrations, not pretend photographs. Local only;
+production was never touched. `pnpm db:history` clears them.
+
 **One Ashram Info card says "NOT CHECKED".** That is the design, not a
 shortfall — `Daily rituals and offerings` names the rituals but has no clock
 times, so there is nothing to vouch for. Three entries are still
@@ -429,15 +566,32 @@ introduction on any build.
 
 ## Still open
 
-**Unresolved on production as of 21 September:** the staff Lost & Found board
-shows no AI pairings on the deployed site, while the same code against the
-same database renders three locally. The data is sound — six match
-suggestions, scores 70 to 92, none dismissed, both items in each pair OPEN,
-and `getOpenFeed` returns all six when queried directly. The board's "matching
-unavailable" banner is absent, so the server believes a model is reachable.
-Only one of four newly attached photos appears either, which points at the
-running build rather than the code. Check the Vercel deployments page for a
-failed or queued build.
+**Resolved 22 September — the Lost & Found pairings.** See "Three faults that
+looked like one" above. The board was never broken; production simply had no
+suggestions to show. Backfilled, and three pairings now render live on
+production: bottle↔flask 88%, spectacles↔glasses 92%, cable↔cable 95%.
+
+**Still missing on production: the Lost & Found photos.** The items there have
+no `Upload` rows at all, so every thumbnail shows the camera-off glyph. Unlike
+the pairings this **cannot be regenerated** — a photo is not derivable from a
+description. The five that exist live only in the local Docker database and
+would have to be copied up, or the demo items re-filed through the deployed app
+with their photos attached. Locally all five render.
+
+Worth knowing what that costs: the vision model reads the object as well as the
+words, and it is what turned a rider typing "Deposit token" into the stored
+title **"Red deposit token, no. 378"**. The number exists only in the image. A
+production demo without photos loses the most persuasive thing the feature
+does.
+
+**The Overview rework is only half of what was asked.** Cab requests, rides per
+day and kilometre milestones can all be built from data that exists. Two
+requested items have no data model behind them at all — **customer feedback**
+(nothing is collected anywhere) and **achievements** (nothing defines what one
+is) — and per this project's honesty rule neither should be rendered with
+invented numbers. Either add a feedback capture flow first, or leave those
+sections out. E-buggy kilometres are the same: no buggy is tracked, so there is
+nothing to total.
 
 **Before this is used for real:**
 
@@ -514,9 +668,13 @@ gitignored, is not tracked, and has never been committed — verified. The serve
 reads it at startup, so a key added while it is running has no effect until a
 restart.
 
-**`.env` now points at the cloud database**, with the local Docker connection
-string commented on the line above it. So `pnpm dev` reads production data
-until that is swapped back — worth knowing before experimenting locally.
+**`.env` points at the local Docker database** (`127.0.0.1:5434`), so `pnpm dev`
+reads local data. An earlier revision of this file said it pointed at the
+cloud; it does not, and believing otherwise is what made "the same code against
+the same database behaves differently" look impossible on 22 September. They
+were never the same database. To work against production, set `DATABASE_URL`
+explicitly for the one command rather than editing `.env` — see "Three faults
+that looked like one".
 
 **The git remote is `github.com/srikanth-karamala/isha-sahayata`**, private.
 Pushing to `main` deploys; see the Deployment section above.
