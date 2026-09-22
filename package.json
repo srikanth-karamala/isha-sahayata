@@ -8,7 +8,8 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
-    "db:history": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-history.ts"
+    "db:history": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-history.ts",
+    "db:backfill-matches": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/backfill-matches.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
