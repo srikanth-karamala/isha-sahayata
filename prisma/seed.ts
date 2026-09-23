@@ -9,7 +9,8 @@ const prisma = new PrismaClient();
  * - Dhyanalinga          10.978067, 76.735315 (campus anchor)
  * - Isha Info Center     10.977239, 76.737505 (Main Gate approach)
  * - Shivapadam Cottages  10.984728, 76.738878
- * - Chamundi Cottages    10.980926, 76.734025 (Kondrai vicinity)
+ * - Chamundi Cottages    10.980926, 76.734025 (NOT the Kondrai stand — this
+ *   landmark was once used for it by mistake; the stand is by Sivapadam 2)
  * Opposite Spanda = dock across the driveway south of Spanda Hall.
  */
 const HUBS = [
@@ -40,8 +41,17 @@ const HUBS = [
   {
     name: 'Kondrai',
     capacity: 15,
-    latitude: 10.98093,
-    longitude: 76.73355,
+    // APPROXIMATE, not surveyed. This stand sits just south of Sivapadam 2,
+    // about 110m away — confirmed by Srikanth on 23 September. It was
+    // previously at 10.98093, 76.73355, which is the Chamundi Cottages
+    // position noted above rather than the stand itself, and put it 686m from
+    // Sivapadam 2: its furthest neighbour instead of its nearest.
+    //
+    // These figures are derived from that description, so they place the pin
+    // in the right relationship to the other stands without being a reading
+    // taken on the spot. Replace with a real one when somebody is there.
+    latitude: 10.9832,
+    longitude: 76.7388,
   },
   {
     name: 'Sivapadam 2',
