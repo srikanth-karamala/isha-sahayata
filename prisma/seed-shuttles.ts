@@ -16,11 +16,17 @@ const prisma = new PrismaClient();
 /** Stops in the order the route calls at them. */
 const ROUTES: { name: string; kind: ShuttleKind; stops: string[] }[] = [
   { name: 'Sarpa Vasal – Adiyogi', kind: 'BUGGY', stops: ['Sarpa Vasal', 'Adiyogi'] },
-  { name: 'Adiyogi – Kalabhairava', kind: 'BUGGY', stops: ['Adiyogi', 'Kalabhairava'] },
+  // Kalabhairava first: coming south from Sarpa Vasal it is 811m out against
+  // Adiyogi's 866m, and Srikanth confirmed the order against the campus on 23
+  // September. Stored the other way round until then, which drew the route
+  // backwards on the map.
+  { name: 'Kalabhairava – Adiyogi', kind: 'BUGGY', stops: ['Kalabhairava', 'Adiyogi'] },
   {
-    name: 'Welcome Point – Nalanda – Brahmaputra',
+    // Brahmaputra is 73m from Welcome Point and Nalanda 132m, so the buggy
+    // reaches Brahmaputra first. Also stored backwards until 23 September.
+    name: 'Welcome Point – Brahmaputra – Nalanda',
     kind: 'BUGGY',
-    stops: ['Welcome Point', 'Nalanda', 'Brahmaputra'],
+    stops: ['Welcome Point', 'Brahmaputra', 'Nalanda'],
   },
   {
     name: 'Welcome Point – Isha Home School',

@@ -10,7 +10,8 @@
     "lint": "eslint",
     "db:history": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-history.ts",
     "db:backfill-matches": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/backfill-matches.ts",
-    "db:shuttle-coords": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-shuttle-coords.ts"
+    "db:shuttle-coords": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-shuttle-coords.ts",
+    "db:shuttles": "pnpm exec ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-shuttles.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
