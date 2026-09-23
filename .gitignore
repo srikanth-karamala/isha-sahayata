@@ -52,3 +52,11 @@ next-env.d.ts
 
 # uploaded fault/repair photos
 /public/uploads/
+
+# Vendored agent-tool documentation (Prisma skill references, mirrored into
+# three tool directories). 213 files, none of them this app's code, and they
+# made the repository look like a docs dump rather than a project. Kept on
+# disk because the tools read them; simply not the repo's business.
+.agents/
+.claude/
+.windsurf/
