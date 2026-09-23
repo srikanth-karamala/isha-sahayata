@@ -2953,3 +2953,266 @@ body:has(.yc-phone-stage) {
   border-top: none;
   border-bottom: 1px solid var(--separator);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Shuttle metro diagram (components/ShuttleMetroMap.tsx)
+
+   Schematic, not geographic — none of the shuttle stops have been
+   surveyed, so there is nothing to place on the real map. The vehicle
+   markers are illustrations of where a route runs; the caption, the key
+   and the SVG's aria-label all say so, because a moving dot that reads
+   as live tracking would mislead someone into waiting for a buggy that
+   is not coming.
+   ───────────────────────────────────────────────────────────── */
+
+.yc-metro {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.05rem;
+  padding: 0.9rem 0.85rem 0.75rem;
+}
+
+.yc-metro-caption {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0 0 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.yc-metro-caption strong { color: var(--ink-2); font-weight: 650; }
+
+.yc-metro-flag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+/* The diagram is wider than a phone; it scrolls in its own container so
+   the page body never scrolls sideways. */
+.yc-metro-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin-inline: -0.2rem;
+  padding-inline: 0.2rem;
+}
+
+.yc-metro-svg { display: block; max-width: none; }
+
+.yc-metro-line-label {
+  font-family: var(--sans, inherit);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.yc-metro-stop-label {
+  font-family: var(--sans, inherit);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--ink-2);
+}
+.yc-metro-stop-label.is-selected { fill: var(--ink); font-weight: 750; }
+
+.yc-metro-stop { cursor: pointer; }
+.yc-metro-stop:focus-visible {
+  outline: 2px solid var(--primary-dark);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.yc-metro-stop:hover .yc-metro-stop-label { fill: var(--ink); }
+
+.yc-metro-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.9rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.yc-metro-key-item { display: inline-flex; align-items: center; gap: 0.32rem; }
+.yc-metro-key-note { margin-left: auto; font-style: italic; opacity: 0.85; }
+
+.yc-metro-swatch {
+  width: 15px;
+  height: 4px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.yc-metro-swatch.is-dashed {
+  background-image: repeating-linear-gradient(
+    90deg, currentColor 0 2px, transparent 2px 5px
+  );
+}
+.yc-metro-swatch.is-ring {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 3px solid var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yc-metro-svg * { transition: none !important; animation: none !important; }
+}
+
+/* Connected network variant: the SVG scales to its container rather than
+   scrolling, because the whole network must be seen at once to read as one
+   map. */
+.yc-metro-north {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ink-2);
+  opacity: 0.6;
+}
+.yc-metro-compass { color: var(--ink-2); }
+
+.yc-metro-missing {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 0.55rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+}
+
+/* Knockout behind a stop label, so text crossing a route line stays legible. */
+.yc-metro-stop-halo {
+  font-family: var(--sans, inherit);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+
+/* Metro diagram: numbered legend and terminus badges, after the classic
+   underground-map infographic the design follows. */
+.yc-metro-index {
+  font-family: var(--sans, inherit);
+  font-size: 11px;
+  font-weight: 700;
+  fill: #fff;
+}
+
+.yc-metro-stop-label.is-hub { font-weight: 750; fill: var(--ink); }
+
+.yc-metro-legend {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.55rem 1rem;
+}
+
+.yc-metro-legend-item { display: flex; align-items: flex-start; gap: 0.5rem; }
+
+.yc-metro-legend-num {
+  flex-shrink: 0;
+  width: 19px; height: 19px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.yc-metro-legend-text { display: flex; flex-direction: column; min-width: 0; }
+.yc-metro-legend-name {
+  font-size: 12px; font-weight: 650; color: var(--ink);
+  line-height: 1.3;
+}
+.yc-metro-legend-kind {
+  font-size: 10.5px; color: var(--muted); line-height: 1.35;
+}
+
+.yc-metro-foot {
+  font-size: 10.5px;
+  font-style: italic;
+  color: var(--muted);
+  margin: 0.7rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--line);
+}
+
+/* Mode icons inside a stop tab: which vehicle serves that stop. Never the
+   only signal — the tab's title attribute names the service in words. */
+.yc-info-tab .yc-tab-modes {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 5px;
+  opacity: 0.7;
+  vertical-align: -1px;
+}
+.yc-info-tab.is-active .yc-tab-modes { opacity: 1; }
+
+/* ── Zoom controls on the route diagram ──────────────────────────────
+   The diagram is wider than a phone. At rest it is scaled to fit the
+   panel, so the shape of the whole network is the first thing seen;
+   the buttons enlarge it past the panel for reading a crowded corner,
+   at which point the container scrolls.
+   ──────────────────────────────────────────────────────────────────── */
+
+.yc-metro-stage { position: relative; }
+
+.yc-metro-zoom {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  padding: 3px;
+  backdrop-filter: blur(6px);
+}
+
+.yc-metro-zoom-btn {
+  min-width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--sans, inherit);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  transition: background .15s ease, color .15s ease;
+}
+.yc-metro-zoom-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.yc-metro-zoom-btn:disabled { opacity: .35; cursor: default; }
+.yc-metro-zoom-btn:focus-visible { outline: 2px solid var(--primary-dark); outline-offset: 1px; }
+.yc-metro-zoom-btn.is-reset { font-size: 11.5px; font-weight: 700; letter-spacing: .02em; }
+
+/* At rest the drawing fits the panel; zoomed past 1 it overflows and this
+   scrolls. max-width:none lets the zoomed width take effect — without it the
+   SVG would stay clamped to the container and the buttons would do nothing. */
+.yc-metro-scroll { overflow: auto; }
+.yc-metro-svg { max-width: none; height: auto; }

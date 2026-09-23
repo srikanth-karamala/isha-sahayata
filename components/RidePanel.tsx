@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Bus, MapPin, ArrowRight, Clock } from 'lucide-react';
+import { Bus, MapPin, ArrowRight, Clock, Tractor } from 'lucide-react';
 import { getShuttleRoutes, type ShuttleRoute } from '@/app/shuttle-actions';
 import CabRequestPanel from './CabRequestPanel';
+import ShuttleMetroMap from './ShuttleMetroMap';
 import type { RiderIdentity } from '@/lib/rider-identity';
 
 /**
@@ -45,18 +46,31 @@ export default function RidePanel({
     };
   }, []);
 
-  /** Every stop that at least one route departs from or calls at. */
+  /**
+   * Every stop, with how many routes call there and which kinds of vehicle.
+   *
+   * The kind matters at the moment of choosing: a bullock cart and an e-buggy
+   * are different propositions, and a visitor deciding where to walk should
+   * see which one actually serves a stop before they get there rather than
+   * after.
+   */
   const stops = useMemo(() => {
     if (!routes) return [];
-    const seen = new Map<string, number>();
+    const seen = new Map<string, { count: number; buggy: boolean; bullock: boolean }>();
     for (const r of routes) {
-      for (const s of r.stops) seen.set(s.name, (seen.get(s.name) ?? 0) + 1);
+      for (const s of r.stops) {
+        const at = seen.get(s.name) ?? { count: 0, buggy: false, bullock: false };
+        at.count += 1;
+        if (r.kind === 'BULLOCK') at.bullock = true;
+        else at.buggy = true;
+        seen.set(s.name, at);
+      }
     }
     // Busiest first: the stop serving most routes is the likeliest to be
     // where someone is standing when they open this.
     return [...seen.entries()]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([name, count]) => ({ name, count }));
+      .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]))
+      .map(([name, at]) => ({ name, ...at }));
   }, [routes]);
 
   const shown = useMemo(() => {
@@ -87,7 +101,7 @@ export default function RidePanel({
           >
             All routes
           </button>
-          {stops.map(({ name }) => (
+          {stops.map(({ name, buggy, bullock }) => (
             <button
               key={name}
               type="button"
@@ -95,14 +109,39 @@ export default function RidePanel({
               aria-selected={from === name}
               onClick={() => setFrom(name)}
               className={`yc-info-tab${from === name ? ' is-active' : ''}`}
+              title={`${name} — served by ${[buggy && 'e-buggy', bullock && 'bullock cart']
+                .filter(Boolean)
+                .join(' and ')}`}
             >
               {name}
+              {/* Which vehicle serves this stop, so the choice is visible
+                  before walking there. Icons carry a title and the button's
+                  own label spells it out, so this is never colour or shape
+                  alone. */}
+              <span className="yc-tab-modes" aria-hidden="true">
+                {buggy && <Bus className="w-3 h-3" />}
+                {bullock && <Tractor className="w-3 h-3" />}
+              </span>
             </button>
           ))}
         </div>
       )}
 
       <div className="yc-info-body">
+        {/* The diagram above the list, because it answers a different
+            question: which lines exist and where they meet, rather than the
+            detail of any one of them. Rendered only once the routes have
+            loaded — an empty diagram is worse than none. */}
+        {routes !== null && routes.length > 0 && (
+          <div className="mb-3">
+            <ShuttleMetroMap
+              routes={routes}
+              selectedStop={from}
+              onSelectStop={(name) => setFrom((cur) => (cur === name ? null : name))}
+            />
+          </div>
+        )}
+
         {/* One notice for the lot. The routes are confirmed from the ashram's
             published list; the hours are not, and saying so once is more
             likely to be read than saying it seven times. */}
@@ -122,6 +161,15 @@ export default function RidePanel({
           <div className="yc-info-empty">
             <Bus className="w-6 h-6 opacity-40" aria-hidden />
             <p className="yc-body-sm mt-2.5">No route calls at this stop.</p>
+            {/* Without this the tab is a dead end: a filter matching nothing
+                left the whole panel empty with no way back but guessing. */}
+            <button
+              type="button"
+              onClick={() => setFrom(null)}
+              className="yc-btn-ghost mt-2"
+            >
+              Show all routes
+            </button>
           </div>
         ) : (
           <ul className="yc-info-list">
