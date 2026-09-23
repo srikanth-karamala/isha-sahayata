@@ -1,10 +1,12 @@
 # Handoff — Isha Sahayata
 
-Written 19 September 2026, at the end of the session that added the AI features,
-Lost & Found, the staff console and the rename. Revised 20 September, after the
-session that added the introduction, the Ashram Info and Ride tabs, and the
-location sanity check. This covers **why** things are the way they are and
-**what is still open**. For what the product does, see `README.md`.
+Written 19 September 2026, at the end of the session that added the AI
+features, Lost & Found, the staff console and the rename. Revised 20 September
+(introduction, Ashram Info and Ride tabs, location sanity check), 22 September
+(the three faults behind a silent week, the Overview rework) and 23 September
+(the Ride metro diagram, the stop coordinates, the repository tidy). This
+covers **why** things are the way they are and **what is still open**. For what
+the product does, see `README.md`.
 
 ---
 
@@ -18,7 +20,8 @@ four destinations:
   cycle, and five tabs left each one about 75px wide on a phone. It keeps its
   standing as something reachable without unlocking a cycle first, which was
   the point of promoting it out of the checkout flow originally.
-- **Ride** — shuttles and lifts. A stub, and it reads as one; see below.
+- **Ride** — the shuttle network drawn as a metro diagram, plus a cab
+  request that reaches the desk. See "The Ride tab" below.
 - **Lost & Found** — report what you lost, hand in what you found, and the
   system works out which pairs describe the same object.
 - **Info** — ashram timings, places, contacts and guidelines.
@@ -171,7 +174,8 @@ darshan that finished an hour ago. Eleven of the fourteen facts reach a visitor:
 ten stated plainly and one carrying the "not checked" caveat. Three remain
 placeholders.
 
-**Ride is deliberately a stub.** The service needs its own data model —
+**Ride was deliberately a stub** until 23 September; it now draws its
+network, and the reasoning below is kept for why it waited. The service needs its own data model —
 vehicles, stops, timings, possibly requests with an accept/assign step and a
 staff console — and three product questions answered before any of it: fixed
 timetable or on-demand; who drives; whether a request needs accepting.
@@ -628,18 +632,11 @@ nothing to total.
   poornangas were named; there are others. The introduction's copy and the
   Ashram Info content were written from what the app does, not from who uses
   it, and both would sharpen once the stories arrive.
-- **Ride needs its design pass** before any code. Asked for on 21 September:
-  a campus map with the e-buggies on it, so a visitor can see which one goes
-  where rather than reading route names. The five routes are confirmed in
-  `lib/ashram-knowledge.ts` and `MapView` already draws the campus, so this is
-  not a new mapping stack — but **none of the shuttle stops have
-  coordinates**; only the six cycle stands are surveyed. Two stops named in
-  the request, Shivapadam 2 and the cottages at Thennai, are not in the
-  confirmed routes. Still undecided: timetable or on-demand, who drives,
-  whether a request needs accepting. And a warning — animating buggies along a
-  route would read as live tracking, which nobody is doing; a visitor who
-  waits at a stop because a moving dot suggested one was coming has been
-  misled by the app. `NEXT-SESSION.md` has the full plan.
+- **Ride now draws its network** — see "The Ride tab" below. What remains is
+  the running hours: all seven routes are `NEVER CHECKED`, so no frequency is
+  shown and none should be invented. Someone with a notepad at a stand can
+  close this. Still undecided: who drives, and whether a request needs
+  accepting.
 - **The confirmed ashram facts were vouched for against published
   information, not read off a noticeboard.** Good enough to state plainly, but
   weaker than a board, so re-check anything seasonal. Still genuinely missing:
@@ -656,6 +653,89 @@ nothing to total.
   cycles, *Punarmilan* (पुनर्मिलन, reunion) for Lost & Found.
 
 ---
+
+## The Ride tab (23 September)
+
+**The shuttle network is drawn as a metro diagram, and this is the second
+design.** The first plotted the stops' real coordinates. It was accurate and
+unreadable: four stops sit within 130m of Welcome Point while Adiyogi is 866m
+south, so a faithful plot crushed half the network into a knot of overlapping
+labels and spent a third of the frame on empty ground between the two
+clusters. Every attempt to fix the legibility traded away the accuracy that
+was the point of plotting positions at all.
+
+The metro form drops geography instead — even spacing, horizontal lines,
+rounded elbows off the interchange. Welcome Point is drawn once with its four
+routes fanning out rather than repeated at the head of four rows. That is how
+the London tube map has always worked, and why it is legible. **Do not
+"restore" geographic positions without re-reading this paragraph**; the
+positional version is preserved in the history if it is ever wanted.
+
+**The ten shuttle stops now have coordinates** (`prisma/seed-shuttle-coords.ts`,
+`pnpm db:shuttle-coords`). They were read off Google Maps rather than surveyed
+on foot, so they are accurate to the building rather than the stop sign. The
+diagram no longer uses them, but they are what a future geographic layer would
+draw on, and they earned their keep immediately: they caught **two routes
+stored backwards**. Kalabhairava is 811m from Sarpa Vasal against Adiyogi's
+866m, so the buggy reaches Kalabhairava first; Brahmaputra is 73m from Welcome
+Point against Nalanda's 132m. Both were stored the other way round, both are
+fixed in `prisma/seed-shuttles.ts` as well as the databases, and both route
+names were corrected so they no longer contradict the stops beneath them.
+
+The lesson generalises: **when route data and coordinates disagree, one of
+them is wrong, and comparing them is cheap.** A leg that doubles back on
+itself is the tell.
+
+**The vehicles are illustrations and must stay that way.** They run out to the
+terminus and back, because a shuttle returns, and they are labelled as drawn
+rather than tracked in the caption, the footnote and the SVG's aria-label.
+Nothing on this campus is tracked. No interval is shown either — a visitor who
+waits because the app implied "every ten minutes" has been misled exactly as a
+wrong darshan timing would mislead them. Do not add dwell times, varying
+speeds or a frequency until somebody reads the real one off the board.
+
+**Unverified as of 23 September:** the zoom controls, the return-journey
+animation and the mode icons on the stop tabs. React does not hydrate under
+the sandbox these were built in — the JS chunks return 403 — so no client
+behaviour could be exercised at all. The typecheck, the production build and
+the lint baseline all pass, and the diagram fitting the panel *was* measured
+(339px inside a 345px column at 390px wide), but the interactive parts need a
+real browser.
+
+## Temple cards on Info: why they are not built
+
+Asked for on 23 September — cards for Adiyogi, Dhyanalinga and Linga Bhairavi
+with photographs and ritual details. Stopped deliberately, twice:
+
+- **The photographs supplied carry Isha's own watermarks**
+  (`isha.sadhguru.org`, `IshaFoundation.org`, a Linga Bhairavi signature) and
+  are search-result thumbnails at around 600x340 — soft on a modern phone and,
+  more to the point, copyrighted material heading into a **public** repository.
+  The clean route is the originals from Isha's media team, which is an
+  internal request rather than a technical problem.
+- **The ritual details could not be fetched.** The obvious URLs 404, and this
+  workspace forbids naming the organisation in an external search, so there was
+  no way to reach the official pages.
+
+What exists already and would carry such a card: the Dhyanalinga's hours and
+its Amavasya and Purnima milk and water offerings, Linga Bhairavi's hours and
+Kalabhairava's, all `confirmed` in `lib/ashram-knowledge.ts`. Adiyogi has no
+timings recorded. The layout is a small job once the images are cleared.
+
+## Why the repository has no .agents, .claude or .windsurf
+
+They are still on disk and the tools still read them. They are no longer
+tracked: three directories each held the same 71 files of vendored Prisma
+documentation, 213 of 482 tracked files, which made the project read as a docs
+dump. `.gitignore` now covers them.
+
+**The history was deliberately not rewritten.** Those files remain in the 88
+commits behind that change, and removing them would rewrite every hash, break
+existing clones and force-push over an already-public repository — to tidy
+clutter rather than remove a secret. The one real secret, the staff passcode,
+was rotated on 22 September and the old value opens nothing. A rewrite would
+also destroy the commit history that documents how this app was built, which
+is worth more than a smaller `.git`.
 
 ## Running it
 

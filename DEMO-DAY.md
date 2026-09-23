@@ -62,10 +62,8 @@ The flow that demonstrates the most in the least time:
 
 ## Known gaps, if asked
 
-- **Ride tab** is a stub. The shuttle service needs its own data model and
-  three product decisions: timetable or on-demand, who drives, whether a
-  request needs accepting.
-- **Ashram Info** is thin until someone walks the campus and confirms the
-  timings. No code needed for that — it is `lib/ashram-knowledge.ts`.
-- **Hosting** is a tunnel from this laptop. `DEPLOY.md` has the Vercel + Neon
-  plan for a permanent URL; budget an hour, and do it on the hotspot.
+- **Ride tab** draws the shuttle network as a metro diagram, with the
+  vehicles moving. They are illustrations: nothing on this campus is
+  tracked, the diagram says so, and no frequency is shown because none
+  has been confirmed. Say that out loud if anyone asks — it is the same
+  honesty rule as the "NOT CHECKED" chips on Info.

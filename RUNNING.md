@@ -157,12 +157,30 @@ Only if you want to start clean. **This deletes the current data.**
 pnpm exec prisma migrate deploy   # ensure tables match the schema
 pnpm exec prisma db seed          # the six hubs
 pnpm db:history                   # 60 cycles + 21 days of rides
+pnpm db:shuttles                  # 10 shuttle stops + 7 routes
+pnpm db:shuttle-coords            # coordinates for those 10 stops
+pnpm db:backfill-matches          # score lost & found reports that were
+                                  # never scored (dry run without --write)
 ```
 
 Note: `pnpm db:history` also clears the lost-and-found reports, because it
 deletes the users those reports belong to. Regenerating them and their
-AI-scored matches is a manual step — ask Claude, or add the reports through
-the app.
+AI-scored matches is a manual step — add the reports through the app, or run
+`pnpm db:backfill-matches --write` to score whatever is already there.
+
+**Any of these can be pointed at production** by setting `DATABASE_URL` for
+the one command rather than editing `.env`:
+
+```bash
+export DATABASE_URL=$(grep '^DATABASE_URL=' .env.production.local \
+  | sed 's/^DATABASE_URL=//; s/^"//; s/"$//')
+pnpm db:shuttles
+```
+
+`.env.production.local` comes from `npx vercel env pull --environment=production`
+and holds a live production database URL — gitignored, and worth deleting when
+you are done. Without the explicit export, Prisma reads `.env`, which points at
+**local Docker**, and the command silently lands on the wrong database.
 
 ---
 

@@ -13,7 +13,9 @@ what to do if it drops.
   became an action rather than a tab.
 - **Ashram Info tab**, reading `lib/ashram-knowledge.ts`. Eleven of fourteen
   facts now reach visitors, ten stated plainly.
-- **Ride tab** — a stub, and it reads as one. Still needs its design pass.
+- **Ride tab** — done on 23 September: the network is drawn as a metro
+  diagram. What is left is the running hours, which are `NEVER CHECKED` on
+  all seven routes. See "The Ride tab" in `HANDOFF.md`.
 - **The 441 km bug** — the app quoted distances from a location hundreds of
   kilometres away. Positions beyond 25 km of the campus are now rejected.
 - **Touch targets** — the report button and the Info section switcher were

@@ -24,6 +24,49 @@ newest successful build of `main`, so the link never needs resharing.
 Two longer URLs also work — `isha-sahayata-srikanth-karamala.vercel.app` and
 the `-git-main-` variant. Same deployment; prefer the short one.
 
+
+## A deploy is two steps, not one
+
+Pushing to `main` builds and serves the **code**. It does not touch the
+**database**. Getting this wrong cost a full day on 22 September, when the site
+looked frozen for a week and then returned 500 once it unfroze.
+
+- **Code** → `git push origin main`. Vercel builds and the alias follows.
+- **Schema** → `npx prisma migrate deploy`, run by hand against production.
+- **Data** → the seed for whatever it is (`db:shuttles`, `db:shuttle-coords`),
+  also by hand.
+
+Both of the manual steps need `DATABASE_URL` set for that one command:
+
+```bash
+export DATABASE_URL=$(grep '^DATABASE_URL=' .env.production.local \
+  | sed 's/^DATABASE_URL=//; s/^"//; s/"$//')
+npx prisma migrate status     # what is pending
+npx prisma migrate deploy     # apply it
+```
+
+Without the export, Prisma reads `.env` — which points at **local Docker** —
+and the migration silently lands on the wrong database.
+
+Only the rider app survives the gap between the two steps. Any page querying a
+table that does not exist yet returns 500; `/admin` did exactly that, with
+`The table public.CabRequest does not exist` (P2021), while the home page
+stayed fine.
+
+### Reading a failed deploy
+
+`vercel ls --prod` lists newest first **with an age column, and the age is the
+point**. Three `● Ready` rows at the top looked healthy and were all 23 hours
+old, which is what hid a week of failing builds. Check the age before the
+status.
+
+`vercel inspect --logs <url>` gives the actual build error. And two CLI traps:
+`vercel link --yes` creates a *new* project named after the directory rather
+than linking to the existing one, so pass `--project isha-sahayata`; and
+`vercel env pull` cannot retrieve Secret-type variables, so `GROQ_API_KEY` and
+`ADMIN_PASSCODE` come back as `[SENSITIVE]` while `DATABASE_URL` arrives
+intact.
+
 ## How a change reaches the site
 
 ```
